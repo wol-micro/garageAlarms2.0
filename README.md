@@ -31,7 +31,7 @@
 ---
 
 This repository is **garageAlarms 2.0**: a decentralized network of nodes that replaces the
-single-box [garageAlarms 1.x](https://github.com/Lindenson/garageAlarms), which keeps guarding
+single-box [garageAlarms 1.x](https://github.com/wol-micro/garageAlarms), which keeps guarding
 the garage until epic 5. Planning is complete; implementation starts with epic 1.
 
 ## Why
@@ -292,7 +292,7 @@ All planning was done with the BMad method and lives under `_bmad-output/` (in R
 ## garageAlarms 1.x
 
 The current single-box firmware (one ESP32-S3, two dry contacts, a Telegram bot) lives in
-[Lindenson/garageAlarms](https://github.com/Lindenson/garageAlarms). Its lessons — bounded
+[wol-micro/garageAlarms](https://github.com/wol-micro/garageAlarms). Its lessons — bounded
 waits, time-based debounce, a queue that deletes only after success, rate-limited reboot
 notices — are carried into 2.0 as architecture rules; see
 [brownfield.md](_bmad-output/specs/spec-garage-alarms-2/brownfield.md).
