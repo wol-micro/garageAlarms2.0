@@ -32,7 +32,7 @@
 
 This repository is **garageAlarms 2.0**: a decentralized network of nodes that replaces the
 single-box [garageAlarms 1.x](https://github.com/wol-micro/garageAlarms), which keeps guarding
-the garage until epic 5. Planning is complete; implementation starts with epic 1.
+the garage until epic 6. Planning is complete; implementation starts with epic 1.
 
 ## Why
 
@@ -145,10 +145,11 @@ sequenceDiagram
 | 🔕 | Mute never silences a critical event. |
 
 > [!TIP]
-> **Success signal.** On the bench (2 logic nodes + 2 collectors), during a smoke alarm the leader's power,
-> the router and one relaying collector are switched off in turn — the alarm reaches Telegram and Pushover
-> every time within **60 s**, **with no losses and at most one duplicate**; a cut loop and a disconnected node
-> raise their own fault events.
+> **Success signal.** On the bench (2 logic nodes + 2 collectors), during a smoke alarm the leader's power
+> and one relaying collector are switched off in turn — the alarm reaches Telegram and Pushover every time
+> within **60 s**, **with no losses and at most one duplicate**. With the router off, nothing is lost and the
+> alarm goes out within 60 s of the internet coming back. A cut loop and a disconnected node raise their own
+> fault events.
 
 ### ⚖️ Telegram as the arbiter
 
@@ -239,13 +240,13 @@ input queue. Two node classes run different subsets of the same stack:
 
 ## Roadmap
 
-Nine epics, 67 stories. Each epic delivers something that works on its own.
+Nine epics, 68 stories. Each epic delivers something that works on its own.
 
 ```mermaid
 flowchart LR
-  E1["1 · Prototype"] --> E2["2 · First alarm"] --> E3["3 · No SPOF"] --> E4["4 · Notify + ack"] --> E5["5 · OTA + secure setup"]
-  E5 --> M(("1.x off"))
-  M --> E6["6 · Web config"] --> E7["7 · Sensors"] --> E8["8 · Rules"] --> E9["9 · MQTT"]
+  E1["1 · Prototype"] --> E2["2 · First alarm"] --> E3["3 · No SPOF"] --> E4["4 · Notify + ack"] --> E5["5 · Web config"]
+  E5 --> E6["6 · OTA + secure setup"] --> M(("1.x off"))
+  M --> E7["7 · Sensors"] --> E8["8 · Rules"] --> E9["9 · MQTT"]
 
   classDef next fill:#182433,stroke:#fbbf24,color:#dce6f0
   classDef todo fill:#111a24,stroke:#243447,color:#dce6f0
@@ -258,21 +259,21 @@ flowchart LR
 | | # | Epic | Stories | Outcome |
 | :---: | :---: | --- | :---: | --- |
 | 🟡 | 1 | Prototype confirms the hardware | 7 | S3 ↔ H2 radio link, Zigbee without a coordinator, loss under WiFi load, Zigbee OTA from a router — measured before building on them |
-| ⚪ | 2 | First alarm through the network | 6 | dry contact on a collector → mesh → logic node → FRAM → Telegram; USB provisioning, encrypted secrets, signed frames |
+| ⚪ | 2 | First alarm through the network | 7 | dry contact on a collector → mesh → logic node → FRAM → Telegram; USB provisioning, encrypted secrets, signed frames; deterministic network simulator |
 | ⚪ | 3 | No single point of failure | 11 | two logic nodes, heartbeat, leader and Telegram lease, replication, UDP second path, critical-alarm backup; bench chaos test |
 | ⚪ | 4 | Notification and acknowledgement | 7 | full Telegram UI, Pushover until acknowledged, shared ack, daily report, reboot notices |
-| 🏁 | 5 | OTA, secure setup, **replacing 1.x** | 7 | OTA for all nodes, phone-based setup, secure boot for production nodes, end-of-line loops; acceptance test, then 1.x is switched off |
-| ⚪ | 6 | Local web configuration | 7 | nodes, sensors, zones, leadership, subscribers, conflicts, export/import |
+| ⚪ | 5 | Local web configuration | 7 | nodes, sensors, zones, leadership, subscribers, conflicts, export/import |
+| 🏁 | 6 | OTA, secure setup, **replacing 1.x** | 7 | OTA for all nodes, phone-based setup, secure boot for production nodes, end-of-line loops; acceptance test, then 1.x is switched off |
 | ⚪ | 7 | Sensors and their health | 10 | channel model, driver gateway and starting set, 12 V and 220 V supervision |
 | ⚪ | 8 | Rules and shared logic | 9 | nine templates, `when`, modes, chains, coincidences, traces, rule editor |
 | ⚪ | 9 | MQTT mirror | 3 | events, states and health to the user's broker |
 
-<sub>🟡 next up · ⚪ planned · 🏁 milestone: 1.x is switched off after epic 5</sub>
+<sub>🟡 next up · ⚪ planned · 🏁 milestone: 1.x is switched off after epic 6</sub>
 
 > [!NOTE]
 > **Status (2026-09-30):** planning complete; prototype hardware ordered
 > ([bill of materials](_bmad-output/planning-artifacts/bill-of-materials.md)). Stories 1.1 and
-> 1.2 need no hardware and can start now. The 1.x box stays in service until epic 5.
+> 1.2 need no hardware and can start now. The 1.x box stays in service until epic 6.
 
 ### Planning documents
 

@@ -1,0 +1,131 @@
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; the status view surfaces open ones
+generated: 10-02-2026 13:07
+last_updated: 10-04-2026 15:14
+project: garageAlarms2.0
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+development_status:
+  epic-1: backlog
+  1-1-репозиторий-garagealarms2-0-собирает-обе-прошивки: backlog
+  1-2-протокол-proto-с-тестами-на-компьютере: backlog
+  1-3-s3-и-h2-радио-поднимают-zigbee-сеть-без-координатора: backlog
+  1-4-доставка-через-соседа: backlog
+  1-5-потери-zigbee-под-нагрузкой-wifi-и-tls: backlog
+  1-6-zigbee-ota-с-сервером-на-роутере: backlog
+  1-7-итоги-прототипа-в-каркас-и-спецификацию: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-акторы-и-хранилище: backlog
+  2-2-ввод-узла-по-usb-с-зашифрованными-секретами: backlog
+  2-3-цифровой-вход-коллектора: backlog
+  2-4-надёжная-доставка-коллектор-логический-узел: backlog
+  2-5-логический-узел-в-wifi-и-telegram: backlog
+  2-6-сквозная-демонстрация: backlog
+  2-7-детерминированный-симулятор-сети: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-heartbeat-и-таблица-живых-узлов: backlog
+  3-2-второй-путь-по-udp-и-выбор-канала-по-классу: backlog
+  3-3-доставка-каждому-живому-логическому-узлу: backlog
+  3-4-разметка-fram-с-версией-и-история-событий: backlog
+  3-5-синхронизация-исходных-событий: backlog
+  3-6-выбор-лидера: backlog
+  3-7-реплицируемая-очередь-и-единица-доставки: backlog
+  3-8-страховка-критичного: backlog
+  3-9-аренда-лидера-в-telegram-и-конфликт-409: backlog
+  3-10-мягкий-конфиг-хранение-и-репликация: backlog
+  3-11-хаос-тест-стенда: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-подписка-по-pin: backlog
+  4-2-команды-telegram-без-повторного-исполнения: backlog
+  4-3-тексты-и-подпись-сообщений: backlog
+  4-4-pushover-для-критичного: backlog
+  4-5-общее-подтверждение-и-напоминания: backlog
+  4-6-уведомления-о-перезагрузке-и-ежедневный-отчёт: backlog
+  4-7-экраны-датчики-и-события-в-боте: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-вход-в-веб-и-обзор-сети: backlog
+  5-2-узлы-и-каналы: backlog
+  5-3-граф-зон: backlog
+  5-4-лидерство-и-подписчики: backlog
+  5-5-конфликты-правок: backlog
+  5-6-экспорт-импорт-и-забыть-узел: backlog
+  5-7-временное-выключение-тревог-критичного-канала: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-шлейфы-с-оконечными-резисторами: backlog
+  6-2-ota-логического-узла: backlog
+  6-3-ota-коллекторов-по-zigbee: backlog
+  6-4-ввод-узла-с-телефона: backlog
+  6-5-защита-рабочих-узлов: backlog
+  6-6-стенд-как-тестовая-сеть-и-путь-выпуска: backlog
+  6-7-приёмка-и-замена-коробки-1-x: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-модель-канала-и-самоописание: backlog
+  7-2-шлюз-драйверов-1-wire-и-i²c: backlog
+  7-3-драйвер-ds18b20: backlog
+  7-4-драйверы-климата: backlog
+  7-5-драйверы-качества-воздуха: backlog
+  7-6-драйверы-освещённости: backlog
+  7-7-контроль-питания-12-в-дымовиков: backlog
+  7-8-наличие-220-в: backlog
+  7-9-здоровье-каналов: backlog
+  7-10-счётчик-импульсов: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-движок-правил-пороги-и-скорость-изменения: backlog
+  8-2-совпадение-и-цепочка: backlog
+  8-3-трасса-по-графу-зон: backlog
+  8-4-здоровье-и-агрегация: backlog
+  8-5-условие-when: backlog
+  8-6-наборы-правил-и-режимы: backlog
+  8-7-команды-правил: backlog
+  8-8-редактор-правил-в-вебе: backlog
+  8-9-смена-режима-из-telegram: backlog
+  epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-настройка-брокера: backlog
+  9-2-публикация-событий-состояний-и-здоровья: backlog
+  9-3-отдельный-ограниченный-буфер: backlog
+  epic-9-retrospective: optional

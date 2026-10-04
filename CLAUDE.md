@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 garageAlarms 2.0 — a hubless alarm network: ESP32-S3 + ESP32-H2 "logic" nodes and ESP32-H2
 "collector" nodes over a Zigbee mesh, alerts to Telegram, Pushover and MQTT. It replaces the
-single-box firmware in `wol-micro/garageAlarms` (1.x), which stays in service until epic 5.
+single-box firmware in `wol-micro/garageAlarms` (1.x), which stays in service until epic 6.
 
 Ordering of concerns, in every decision: **never lose an event > never flood the user >
 everything else.** Duplicates are acceptable; losses are not.
