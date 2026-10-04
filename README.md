@@ -235,8 +235,35 @@ input queue. Two node classes run different subsets of the same stack:
 | ext | `Notify` · `Ui` | outbound queue, Telegram, Pushover, MQTT · web UI and commands | ✅ | — |
 | — | `Sensor` · `Sys` · `Storage` | drivers and channels · OTA, watchdog, time, provisioning · FRAM / NVS | ✅ | ✅ |
 
-25 binding decisions (AD-1…AD-25) are recorded in the
+28 binding decisions (AD-1…AD-28) are recorded in the
 [architecture spine](_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md).
+
+## Build
+
+Toolchain: **ESP-IDF v6.0.3** (targets `esp32s3`, `esp32h2`). Dependencies are pinned in
+`idf_component.yml` (`espressif/esp-zigbee-lib` 2.0.4, `espressif/cbor` 7.0.0) and fetched by the
+component manager on the first build.
+
+```text
+components/   shared ESP-IDF components: ga_config (all constants), proto, actor stubs
+apps/logic-s3/       logic node firmware (ESP32-S3; its H2 runs Espressif's RCP firmware)
+apps/collector-h2/   collector firmware (ESP32-H2)
+```
+
+```bash
+. ~/esp/v6.0.3/esp-idf/export.sh
+
+# Logic node (ESP32-S3)
+idf.py -C apps/logic-s3 set-target esp32s3 build
+idf.py -C apps/logic-s3 -p <port> flash monitor
+
+# Collector (ESP32-H2)
+idf.py -C apps/collector-h2 set-target esp32h2 build
+idf.py -C apps/collector-h2 -p <port> flash monitor
+```
+
+`set-target` is needed once per clean build directory; `<port>` is the board's serial port (e.g. `/dev/ttyACM0`), which depends on the machine and plug-in order. At boot each node logs one identity line:
+role, EUI-64, firmware version (from `git describe`) and `GA_CONFIG_VERSION`.
 
 ## Roadmap
 
@@ -283,10 +310,10 @@ All planning was done with the BMad method and lives under `_bmad-output/` (in R
 | --- | --- |
 | 💡 [Idea: device network](_bmad-output/forge/garage-device-network/forged-idea.md) | decentralized AP model, node classes, Telegram arbiter |
 | 💡 [Idea: rules and config](_bmad-output/forge/rules-config-model/forged-idea.md) | configuration levels, channel model, rule templates |
-| 🏛️ [Architecture spine](_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md) | 25 binding decisions (AD-1…AD-25) |
+| 🏛️ [Architecture spine](_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md) | 28 binding decisions (AD-1…AD-28) |
 | 📜 [Specification](_bmad-output/specs/spec-garage-alarms-2/SPEC.md) | 13 capabilities, constraints, non-goals, success signal + companions: [external channels](_bmad-output/specs/spec-garage-alarms-2/external-channels.md) · [sensor catalog](_bmad-output/specs/spec-garage-alarms-2/sensor-catalog.md) · [rule templates](_bmad-output/specs/spec-garage-alarms-2/rule-templates.md) · [glossary](_bmad-output/specs/spec-garage-alarms-2/glossary.md) |
 | 🎨 [UX: design](_bmad-output/planning-artifacts/ux-designs/ux-garageAlarms-2026-09-30/DESIGN.md) · [UX: experience](_bmad-output/planning-artifacts/ux-designs/ux-garageAlarms-2026-09-30/EXPERIENCE.md) | dark "Cold Steel" theme, bot menus, web sections, setup flows, mockups |
-| 🗂️ [Epics and stories](_bmad-output/planning-artifacts/epics.md) | 36 FR, 12 NFR, 69 UX requirements, 9 epics, 67 stories |
+| 🗂️ [Epics and stories](_bmad-output/planning-artifacts/epics.md) | 36 FR, 12 NFR, 69 UX requirements, 9 epics, 68 stories |
 | 🧾 [Bill of materials](_bmad-output/planning-artifacts/bill-of-materials.md) | prototype bench: 2 logic nodes + 2 collectors |
 
 ---

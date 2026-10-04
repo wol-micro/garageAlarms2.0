@@ -1,0 +1,3 @@
+## proto owns CBOR encoding (AD-5). Exact pin, no range operators.
+dependencies:
+  espressif/cbor: "7.0.0"

@@ -38,4 +38,25 @@ An older `~/Esp32/esp-idf` (v5.5-dev) exists for other projects — do not use i
 . ~/esp/v6.0.3/esp-idf/export.sh
 ```
 
-Project layout and per-app build commands are created by story 1.1; update this section then.
+Layout:
+
+- `components/` — shared ESP-IDF components (`snake_case`): `ga_config` (every constant, AD-25),
+  `proto`, and the actors `mesh delivery membership storage sensors sys` (both firmwares) plus
+  `config rules notify ui` (logic node only).
+- `apps/logic-s3` (esp32s3) and `apps/collector-h2` (esp32h2) pull `components/` through
+  `EXTRA_COMPONENT_DIRS` and list their components in `COMPONENTS`; the collector must never list
+  the logic-only ones.
+
+```bash
+idf.py -C apps/logic-s3 set-target esp32s3 build          # set-target once per clean build dir
+idf.py -C apps/logic-s3 -p <port> flash monitor
+idf.py -C apps/collector-h2 set-target esp32h2 build
+idf.py -C apps/collector-h2 -p <port> flash monitor
+gcc -fsyntax-only -x c components/ga_config/include/ga_config.h   # ga_config.h stays IDF-free
+```
+
+Component shape (AD-27): every actor component has `core/` (pure deterministic C: no FreeRTOS,
+no ESP-IDF headers, no clock reads; only `ga_config.h` and `proto` allowed), `port/` (interfaces
+to external dependencies), `shell/` (the FreeRTOS task — the only place for RTOS code and
+core/priority binding from the `GA_TASK_*` map) and `test/`. `esp_err_t` only in `shell/` and
+`port/`. No timeout, interval or size literals outside `ga_config.h` (AD-25).

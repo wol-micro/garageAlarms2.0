@@ -1,0 +1,15 @@
+# Collector: ESP32-H2 (Waveshare MINI-1-N4).
+CONFIG_IDF_TARGET="esp32h2"
+
+# Flash 4 MB
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Task watchdog on, checking the idle task (single core) (AD-3)
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0=y
+
+# Zigbee stack (AD-13): router, native 802.15.4 radio
+CONFIG_ZB_ENABLED=y
+CONFIG_ZB_ZCZR=y
+CONFIG_ZB_RADIO_NATIVE=y
