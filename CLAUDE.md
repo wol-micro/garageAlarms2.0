@@ -18,7 +18,7 @@ Implementation follows the planning documents; read them before changing behavio
 | Document | Path |
 | --- | --- |
 | Specification (13 capabilities) + companions | `_bmad-output/specs/spec-garage-alarms-2/SPEC.md` |
-| Architecture spine (AD-1…AD-25, binding) | `_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md` |
+| Architecture spine (AD-1…AD-28, binding) | `_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md` |
 | UX contracts | `_bmad-output/planning-artifacts/ux-designs/ux-garageAlarms-2026-09-30/DESIGN.md`, `EXPERIENCE.md` |
 | Epics and stories (with UX-DR) | `_bmad-output/planning-artifacts/epics.md` |
 | Start values of all tunables | `_bmad-output/specs/spec-garage-alarms-2/tunables.md` |

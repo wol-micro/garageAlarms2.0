@@ -7,7 +7,7 @@ paradigm: 'actor model (FreeRTOS task per actor, message passing) over a layered
 scope: 'Распределённая сеть тревог без хаба: логические узлы (ESP32-S3 + H2) и коллекторы (ESP32-H2), межузловые протоколы, правила и конфиг, внешние каналы'
 status: final
 created: '2026-09-29'
-updated: '2026-10-04'
+updated: '2026-10-05'
 binds: []
 sources:
   - '_bmad-output/forge/garage-device-network/forged-idea.md'
@@ -80,7 +80,7 @@ flowchart TD
 ### AD-3 — Никакого ожидания без границы
 - **Binds:** all
 - **Prevents:** зависание задачи → watchdog → перезагрузочная петля (урок 1.x).
-- **Rule:** Каждое ожидание (сеть, шина, очередь, TLS) ограничено таймаутом «без прогресса». Блокирующий TLS — только в задаче `Notify`. Каждая задача зарегистрирована в task watchdog. TLS не начинается до синхронизации времени.
+- **Rule:** Каждое ожидание (сеть, шина, очередь, TLS) ограничено таймаутом «без прогресса». Блокирующий TLS — только в задаче `Notify`. Каждая задача зарегистрирована в task watchdog; зависшая задача перезагружает узел (panic), причину `Sys` пишет в журнал и передаёт в уведомление о неожиданной перезагрузке; отключать перезагрузку можно только в локальной стендовой сборке. TLS не начинается до синхронизации времени.
 
 ### AD-4 — `Storage` — единственный доступ к постоянной памяти; запись до подтверждения [ADOPTED]
 - **Binds:** Storage, Sensor, Delivery, Notify, Config, Membership, Sys
@@ -230,7 +230,7 @@ flowchart TD
 | protocomm из ESP-IDF (коллектор, BLE) | в составе ESP-IDF |
 | Логический узел | ESP32-S3 (модуль с PSRAM) + ESP32-H2 как Zigbee RCP (UART), раздельные антенны |
 | Коллектор | ESP32-H2 |
-| FRAM | SPI, 256 КБ с командой RDID (MB85RS2MTA, Infineon FM25V20A) |
+| FRAM | SPI с командой RDID, ≥ 256 КБ: MB85RS4MT 512 КБ (Adafruit 4719, RDID `04 7F 49 03`) — основная; MB85RS2MTA, Infineon FM25V20A — допустимые |
 | espressif/mqtt | 1.0.0 |
 | Внешние API | Telegram Bot API; Pushover Messages + Receipts API; MQTT 3.1.1 / 5 (брокер пользователя) |
 
@@ -270,7 +270,7 @@ garageAlarms2.0/
 
 Текущий репозиторий `garageAlarms` (Arduino, ESP32-S3) не переносится и остаётся рабочим до ввода новой сети.
 
-Регионы FRAM при 256 КБ (стартовая разметка, AD-28; размеры — в `ga_config.h`):
+Регионы FRAM — стартовая разметка на 256 КБ (AD-28; размеры — в `ga_config.h`); остаток более ёмкой микросхемы — резерв под миграцию:
 
 | Регион | Владелец | Старт |
 | --- | --- | --- |

@@ -89,9 +89,10 @@
 /* Allowed lateness of a timeout after next_deadline. ms */
 #define GA_TICK_JITTER                  50U
 
-/* FRAM regions, start layout for a 256 KB chip (AD-28). Used only at first
- * format; afterwards the layout is defined by the superblock. bytes */
-#define GA_FRAM_SIZE                (256U * 1024U) /* whole chip. bytes */
+/* FRAM regions, start layout for a 256 KB budget (AD-28). Used only at first
+ * format; afterwards the layout is defined by the superblock. A larger chip
+ * (MB85RS4MT, 512 KB) keeps the rest as growth reserve for migration. bytes */
+#define GA_FRAM_SIZE                (256U * 1024U) /* layout budget, minimum chip size. bytes */
 #define GA_FRAM_SUPERBLOCK          256U            /* size of one copy; GA_FRAM_SUPERBLOCK_COPIES copies (A/B). bytes */
 #define GA_FRAM_SUPERBLOCK_COPIES   2U               /* count */
 #define GA_FRAM_SYS_STATE           256U            /* Sys: boot, reboot notify times. bytes */
