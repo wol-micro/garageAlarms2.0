@@ -57,7 +57,7 @@
 #define GA_LEASE_TTL                (15U * 60U * 1000U)
 /* YIELDED pause without a lease; actual pause = GA_YIELD_BASE * (1 + rank). ms */
 #define GA_YIELD_BASE               (30U * 1000U)
-/* Anti-replay seq window per (node, boot). count of seq numbers */
+/* Anti-replay seq window per reliable stream (AD-7, AD-17). count of seq numbers */
 #define GA_SEQ_WINDOW               512U
 /* Stored boot windows per node for dedup. count */
 #define GA_DEDUP_BOOTS              4U
