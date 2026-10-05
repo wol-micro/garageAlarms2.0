@@ -203,7 +203,7 @@ GA_STATIC_ASSERT(GA_TASK_MESH_PRIO > GA_TASK_DELIVERY_PRIO &&
 #define GA_NOTIFY_IDEMP_MARGIN      (15U * 60U * 1000U)
 /* Executed Telegram update_id values kept in memory. count */
 #define GA_TG_EXECUTED_IDS          64U
-/* Maximum age of a Telegram command. ms */
+/* Maximum age of a command: Telegram, MQTT, cause of an enabling output command. ms */
 #define GA_CMD_MAX_AGE              (10U * 60U * 1000U)
 /* Lifetime of a config tombstone. ms (30 days) */
 #define GA_TOMBSTONE_TTL            (30U * 24U * 60U * 60U * 1000U)
