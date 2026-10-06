@@ -10,6 +10,7 @@ companions:
   - external-channels.md
   - tunables.md
   - wire-format.md
+  - durability-contracts.md
   - brownfield.md
 sources:
   - ../../forge/garage-device-network/forged-idea.md
