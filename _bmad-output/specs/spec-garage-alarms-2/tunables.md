@@ -20,6 +20,9 @@
 | Ожидание ACK всех / порог «глухого» узла | `GA_ACK_ALL_TIMEOUT` / `GA_DEAF_MIN_RETRIES` | 5 мин / 10 повторов | нет |
 | Переходный период смены ключа HMAC | `GA_KID_TRANSITION` | 7 сут | нет |
 | Максимум одного Zigbee-кадра | `GA_ZB_FRAME_MAX_BYTES` | 80 Б | нет |
+| Длина подписи HMAC-SHA256 в кадре / ключа сети | `GA_PROTO_MAC_BYTES` / `GA_NET_KEY_BYTES` | 8 Б / 32 Б | нет |
+| Обмен недостающими событиями: период / событий за проход | `GA_SYNC_PERIOD` / `GA_SYNC_MAX_EVENTS` | задаётся в истории 3.5 | нет |
+| Предел скорости `bulk` по Zigbee | `GA_BULK_ZB_RATE` | задаётся в истории 3.2 | нет |
 
 ## Буферы и память
 
@@ -66,6 +69,7 @@
 | Срок постоянной сессии MQTT 5 подписчика команд | `GA_MQTT_SESSION_EXPIRY` | 10 мин (≥ `GA_CMD_MAX_AGE`) | нет |
 | Резерв NVS под слоты `protect` (по одному на выход; выходов на коллекторе не больше) | `GA_OUTPUT_NVS_RESERVE` | 8 | нет |
 | Перезагрузок подряд во включённом состоянии до безопасного | `GA_OUTPUT_BOOT_LOOP` | 3 | нет |
+| Записей `hold` в NVS за сутки (квота внутри `GA_COLLECTOR_NVS_BUDGET`) | `GA_OUTPUT_HOLD_WRITES_DAY` | 200 | нет |
 
 ## Внешние каналы и интерфейсы
 

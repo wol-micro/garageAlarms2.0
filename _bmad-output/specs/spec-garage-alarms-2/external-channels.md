@@ -28,7 +28,7 @@
 Только критичные события, на ключ группы Pushover (вся семья): `priority=2` (retry ≥ 30 с, expire ≤ 3 ч), `tag = event_id`; лишние копии — `cancel_by_tag`; подтверждение по receipt → `ack`.
 
 ## MQTT (AD-24)
-Публикует MQTT-узел, QoS 1, JSON с `event_id`. Темы: `<prefix>/<node>/<channel>/state` (retained), `<prefix>/events`, `<prefix>/<node>/health`, `<prefix>/<node>/<channel>/result` (отказ команды с причиной). Команды — только выходам с флагом `mqtt_control`: `<prefix>/<node>/<channel>/set`, JSON `{value, until?, ts?}`; retained и старше `GA_CMD_MAX_AGE` отбрасываются. Отдельный ограниченный буфер; не задерживает основную очередь. Адрес, порт, TLS, префикс — мягкий конфиг; логин/пароль — на каждом узле.
+Публикует MQTT-узел, JSON с `event_id`; Client ID — `ga2-<EUI-64>`. Темы: `<prefix>/<node>/<channel>/state` (QoS 1, retain), `<prefix>/<node>/health` (QoS 1, retain), `<prefix>/events` (QoS 1), `<prefix>/<node>/<channel>/result` (QoS 1, отказ команды с причиной). Команды — только выходам с флагом `mqtt_control`: `<prefix>/<node>/<channel>/set` (QoS 1), JSON `{value, until?, ts?, id?}`; с `id` повтор команды отсекается точно; retained и старше `GA_CMD_MAX_AGE` отбрасываются. Отдельный ограниченный буфер; не задерживает основную очередь. Адрес, порт, TLS, префикс — мягкий конфиг; логин/пароль — на каждом узле.
 
 ## Bluetooth — только ввод узла
 | Передаётся | Логический (S3) | Коллектор (H2) |

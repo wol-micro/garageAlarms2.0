@@ -9,6 +9,7 @@ companions:
   - rule-templates.md
   - external-channels.md
   - tunables.md
+  - wire-format.md
   - brownfield.md
 sources:
   - ../../forge/garage-device-network/forged-idea.md
