@@ -50,6 +50,7 @@ context:
 | Truncated / garbage | random or cut bytes into decode | error, no crash, no out-of-bounds read | `PROTO_ERR_FORMAT` |
 | Size proof | every Zigbee-bound message with all fields at their bounds | exact sizes of `wire-format.md` (cmd 70, state 77, intent 71, channel 65, rules part 75), each ≤ `GA_ZB_FRAME_MAX_BYTES` | test fails if not |
 | Field out of bounds | e.g. `kid` > 23, `dur_s` > 43200, Zigbee type code > 23 | encode refuses | `PROTO_ERR_SIZE` |
+| Pulse without duration | `output_cmd` with `pulse`, `dur_s` = 0 | encode refuses, decode rejects | `PROTO_ERR_FORMAT` |
 
 **Decisions (human, 2026-10-05):**
 - HMAC tag `m` = 8 B: HMAC-SHA256 truncated to 64 bit (`GA_PROTO_MAC_BYTES` in `ga_config.h`).
