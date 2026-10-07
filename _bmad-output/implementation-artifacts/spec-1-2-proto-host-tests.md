@@ -72,6 +72,7 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
+- [ ] `components/ga_config/include/ga_config.h`, `tools/check_tunables.py` -- add every `tunables.md` constant still missing (outputs, MQTT, `GA_PROTO_MAC_BYTES`, `GA_NET_KEY_BYTES`, `GA_COLLECTOR_CRIT_MERGE_PERSIST`, …; rows marked «задаётся в истории 3.x» get a placeholder value with a `/* start value set in story 3.x */` comment) and a check that every `GA_*` name in `tunables.md` exists in `ga_config.h` with the same start value -- owner requirement 2026-10-07: all important constants in one global file, drift caught automatically.
 - [ ] `components/proto/include/proto.h` -- public API: codes for types/classes/criticality/stream kind/levels/values/channel kinds, `proto_env_t`, frame sign/verify, envelope encode/decode, payload encode/decode for channel state, `output_cmd`, `output_state`, `output_intent`, `local_rules` part, error enum -- single protocol source (AD-5).
 - [ ] `components/proto/include/proto_crypto_port.h` -- port struct: `mac(ctx, kid, data, len, out[GA_PROTO_MAC_BYTES])` returning ok / unknown kid, and `sha256(ctx, data, len, out[32])` -- crypto behind a port (AD-27).
 - [ ] `components/proto/src/{frame.c,envelope.c,payload_*.c}` -- implementation over TinyCBOR, fixed buffers.
@@ -93,4 +94,5 @@ context:
 
 **Commands:**
 - `tools/host_test.sh` -- expected: exit 0, coverage lines/branches ≥ 90 % for `components/proto/src`
+- `python3 tools/check_tunables.py` -- expected: exit 0, every `tunables.md` constant present in `ga_config.h` with the same value
 - `. ~/esp/v6.0.3/esp-idf/export.sh && idf.py -C apps/logic-s3 build && idf.py -C apps/collector-h2 build` -- expected: exit 0, no warnings from `proto`
