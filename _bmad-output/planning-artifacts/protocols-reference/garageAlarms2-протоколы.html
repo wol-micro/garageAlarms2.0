@@ -1,0 +1,2971 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>garageAlarms 2.0 — протоколы</title>
+<style>
+:root {
+  --bg:#fbfaf7; --fg:#1d1d1b; --muted:#5d5a52; --accent:#a3461f; --line:#dedad0;
+  --code-bg:#f0ede5; --th-bg:#efebe2; --row-alt:#f6f4ee; --link:#1f5f99;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#17181a; --fg:#e6e3dc; --muted:#a19d93; --accent:#e58a5c; --line:#34363a;
+    --code-bg:#24262a; --th-bg:#222428; --row-alt:#1c1e21; --link:#7ab4ea;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#17181a; --fg:#e6e3dc; --muted:#a19d93; --accent:#e58a5c; --line:#34363a;
+  --code-bg:#24262a; --th-bg:#222428; --row-alt:#1c1e21; --link:#7ab4ea;
+}
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--fg);
+  font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+main { max-width:1000px; margin:0 auto; padding:32px 16px 80px; }
+h1 { font-size:2rem; line-height:1.2; margin:0 0 .5em; }
+h2 { font-size:1.45rem; margin:2.2em 0 .6em; padding-bottom:.25em; border-bottom:2px solid var(--accent); }
+h3 { font-size:1.12rem; margin:1.6em 0 .5em; }
+p, li { max-width:75ch; }
+a { color:var(--link); }
+hr { border:0; border-top:1px solid var(--line); margin:2.5em 0; }
+code { font:0.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; background:var(--code-bg);
+  padding:.08em .32em; border-radius:4px; overflow-wrap:anywhere; }
+pre { background:var(--code-bg); padding:12px 14px; border-radius:6px; overflow-x:auto; }
+pre code { background:none; padding:0; }
+.tw { overflow-x:auto; margin:1em 0; }
+table { border-collapse:collapse; width:100%; font-size:.92rem; }
+th, td { border:1px solid var(--line); padding:6px 9px; text-align:left; vertical-align:top; }
+th { background:var(--th-bg); }
+tbody tr:nth-child(even) { background:var(--row-alt); }
+figure.diagram { margin:1.2em 0; overflow-x:auto; }
+pre.mermaid { background:transparent; text-align:center; padding:0; }
+strong { color:inherit; }
+@media print {
+  body { background:#fff; color:#000; font-size:11pt; }
+  main { max-width:none; padding:0; }
+  a { color:#000; text-decoration:none; }
+  h2 { break-before:page; }
+  h2, h3 { break-after:avoid; }
+  table, figure.diagram, pre { break-inside:avoid; }
+  .tw { overflow:visible; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>garageAlarms 2.0 — протоколы распределённой системы</h1>
+<p>Справочник по межузловым и внешним протоколам сети тревог garageAlarms 2.0. Составлен 2026-10-05, обновлён 2026-10-06 (коммит 560df2a) только по документам планирования; ничего сверх них не добавлено. Где решение ещё не принято, стоит пометка <strong>«не зафиксировано, решается в истории X»</strong>.</p>
+<p><strong>Источники и их сила</strong></p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Документ</th>
+<th>Статус</th>
+<th>Как используется</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ARCHITECTURE-SPINE.md</code> (AD-1…AD-29, редакция 2026-10-05 после ревью)</td>
+<td><code>final</code>, обязателен</td>
+<td><strong>основной источник</strong>, в том числе по выходам и MQTT</td>
+</tr>
+<tr>
+<td><code>sprint-change-proposal-2026-10-05.md</code></td>
+<td>утверждено 2026-10-05, применено</td>
+<td>контекст выходов и MQTT; раздел 6 (итоги ревью) уточняет разделы 3 и 4.2</td>
+</tr>
+<tr>
+<td><code>sprint-change-proposal-2026-10-04.md</code></td>
+<td>утверждено и применено</td>
+<td>контекст: AD-26…AD-28, формат аренды, PIN</td>
+</tr>
+<tr>
+<td><code>SPEC.md</code> (14 CAP), <code>tunables.md</code>, <code>glossary.md</code>, <code>external-channels.md</code>, <code>sensor-catalog.md</code>, <code>rule-templates.md</code></td>
+<td>контракт</td>
+<td>возможности, константы, внешние каналы</td>
+</tr>
+<tr>
+<td><code>components/ga_config/include/ga_config.h</code></td>
+<td>код (история 1.1)</td>
+<td>фактические имена и значения констант</td>
+</tr>
+<tr>
+<td><code>wire-format.md</code> (компаньон спецификации, 2026-10-06)</td>
+<td>контракт</td>
+<td>точная раскладка кадра, конверта и нагрузок, доказательство лимита 80 Б, хеши</td>
+</tr>
+<tr>
+<td><code>durability-contracts.md</code> (компаньон спецификации, 2026-10-06)</td>
+<td>контракт</td>
+<td>сводка надёжности по границам (§15)</td>
+</tr>
+<tr>
+<td><code>epics.md</code></td>
+<td>план</td>
+<td>уточнения из критериев историй (формат аренды, NFR5, эпик 10)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Правила, которые появились с выходами и входящим MQTT (AD-29, новые редакции AD-9/12/14/15/16/19/22/24/27), помечены <strong>[2026-10-05]</strong>. Где предложение от 2026-10-05 (разделы 3 и 4.2) расходится с каркасом, действует каркас: например, вместо <code>clean_start</code> — постоянная сессия MQTT 5, вместо страховки «последнего значения» — страховка каждого сообщения с отпечатком. Учтены обе доработки AD-29/AD-24 после ревью.</p>
+<h2>Содержание</h2>
+<ol>
+<li><a href="#s1">Обзор системы</a></li>
+<li><a href="#s2">Кадр и конверт: байтовая раскладка (AD-5, AD-6, <code>wire-format.md</code>)</a></li>
+<li><a href="#s3">Идентичность и потоки (AD-7)</a></li>
+<li><a href="#s4">Транспорт и классы трафика (AD-12, AD-13)</a></li>
+<li><a href="#s5">Надёжная доставка (AD-8, AD-17)</a></li>
+<li><a href="#s6">Репликация между логическими узлами и журнал (AD-8, AD-28)</a></li>
+<li><a href="#s7">Членство и heartbeat (AD-19)</a></li>
+<li><a href="#s8">Лидерство, аренда Telegram, страховка, MQTT-узел (AD-9, AD-10, AD-11)</a></li>
+<li><a href="#s9">Внешняя доставка: единица доставки, <code>delivered</code>, <code>ack</code>, эпизоды (AD-21)</a></li>
+<li><a href="#s10">Синхронизация мягкого конфига (AD-14)</a></li>
+<li><a href="#s11">Правила (AD-16)</a></li>
+<li><a href="#s12">Выходы (AD-29)</a></li>
+<li><a href="#s13">MQTT (AD-24 в новой редакции)</a></li>
+<li><a href="#s14">Время, безопасность, ввод в сеть, OTA (AD-20, AD-17, AD-23, AD-18)</a></li>
+<li><a href="#s15">Контракты надёжности на границах</a></li>
+<li><a href="#s16">Таймеры и константы</a></li>
+<li><a href="#s17">Инварианты симулятора как свойства корректности (AD-27)</a></li>
+<li><a href="#s18">Открытые вопросы и противоречия</a></li>
+</ol>
+<hr>
+<p><a id="s1"></a></p>
+<h2>1. Обзор системы</h2>
+<h3>1.1. Приоритеты и модель</h3>
+<ul>
+<li>Порядок приоритетов в каждом решении: <strong>не потерять событие &gt; не флудить &gt; остальное.</strong></li>
+<li>Модель AP: доступность важнее согласованности. Дубль допустим, потеря — нет. Доставка «хотя бы один раз».</li>
+<li>Хаба нет. Zigbee работает в режиме distributed security без координатора. Нет узла, отказ которого останавливает сеть.</li>
+<li>Консенсуса с кворумом (Raft/Paxos) и строгой согласованности нет (не-цель SPEC).</li>
+</ul>
+<h3>1.2. Узлы</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Вид узла</th>
+<th>Железо</th>
+<th>Память</th>
+<th>Связь</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Логический</td>
+<td>ESP32-S3 (с PSRAM) + ESP32-H2 как Zigbee RCP по UART, раздельные антенны</td>
+<td>FRAM на своей SPI-шине (MB85RS4MT 512 КБ, разметка на 256 КБ); секреты — зашифрованный NVS</td>
+<td>Zigbee (через H2) + WiFi/UDP</td>
+<td>реплика журнала событий, очереди, конфига и правил; веб; Telegram, Pushover, MQTT; только цифровые входы с антидребезгом; 2..N в сети</td>
+</tr>
+<tr>
+<td>Коллектор</td>
+<td>ESP32-H2</td>
+<td>NVS через <code>Storage</code> (бюджет <code>GA_COLLECTOR_NVS_BUDGET</code>)</td>
+<td>только Zigbee</td>
+<td>датчики (шины, аналог), пересылка по mesh; <strong>[2026-10-05]</strong> выходы (реле) и локальные правила</td>
+</tr>
+</tbody>
+</table></div>
+<p>Все узлы питаются от сети и в Zigbee являются роутерами (AD-13, NFR10). Выходы бывают только на коллекторах <strong>[2026-10-05]</strong>.</p>
+<h3>1.3. Акторы и размещение</h3>
+<p>Каждый актор — задача FreeRTOS, единственный владелец своего состояния; общение только сообщениями через входную очередь (AD-1). Запрос ↔ ответ по <code>corr_id</code>, события — по подписке.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Актор</th>
+<th>Слой</th>
+<th>Владеет</th>
+<th>Логический</th>
+<th>Коллектор</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Sensor</code></td>
+<td>драйверы</td>
+<td>драйверы, каналы, сбор, антидребезг, кэш параметров своих каналов; <strong>[2026-10-05]</strong> выходы и их арбитраж, таблица локальных правил (коллектор)</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td><code>Mesh</code></td>
+<td>L1</td>
+<td>Zigbee-стек, UDP, кадрирование, выбор канала</td>
+<td>✔</td>
+<td>✔ (только Zigbee)</td>
+</tr>
+<tr>
+<td><code>Delivery</code></td>
+<td>L2</td>
+<td>ACK, повтор, антиповтор, дедуп, буфер неподтверждённых, репликация исходных событий, курсоры потребителей журнала</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td><code>Membership</code></td>
+<td>L3</td>
+<td>таблица живых узлов, heartbeat, вычисление лидера (и <strong>[2026-10-05]</strong> MQTT-узла)</td>
+<td>✔</td>
+<td>✔ (без лидера)</td>
+</tr>
+<tr>
+<td><code>Config</code></td>
+<td>L4</td>
+<td>мягкий конфиг, правила, подписчики, режимы, версии, слияние</td>
+<td>✔</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Rules</code></td>
+<td>L5</td>
+<td>исполнение правил, окна, производные события</td>
+<td>✔</td>
+<td>— (локальные правила коллектора исполняет <code>Sensor</code>, §11.6)</td>
+</tr>
+<tr>
+<td><code>Notify</code></td>
+<td>внешний</td>
+<td>исходящая очередь, Telegram (отправка и <code>getUpdates</code>), Pushover, receipts, <code>offset</code>, MQTT-зеркало, его буфер и <strong>[2026-10-05]</strong> приём команд MQTT</td>
+<td>✔</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Ui</code></td>
+<td>внешний</td>
+<td>веб, разбор и исполнение команд</td>
+<td>✔</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Sys</code></td>
+<td>сквозной</td>
+<td>OTA, watchdog, время, самодиагностика, ввод в сеть, секреты</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td><code>Storage</code></td>
+<td>сервис</td>
+<td>FRAM (логический) / NVS (коллектор)</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+</tbody>
+</table></div>
+<p>Стрелка на схеме — «может отправлять запрос». Обратно идут только события по подписке: <code>Notify</code> → <code>Ui</code> (команды из <code>getUpdates</code>), <code>Delivery</code> → <code>Rules</code> и <code>Notify</code> (входящие события), <code>Delivery</code> → <code>Membership</code> (глухота узла), <code>Delivery</code> → <code>Sensor</code> (команды правил), <code>Config</code> → <code>Sensor</code> (параметры каналов). Все события, в том числе датчиков самого логического узла, проходят через <code>Delivery</code>: у <code>Rules</code> один вход (AD-2). <strong>[2026-10-05]</strong> Стрелка <code>Ui</code> → <code>Delivery</code> добавлена для <code>output_intent</code> ручных команд из веба и бота; намерения из MQTT идут по <code>Notify</code> → <code>Delivery</code>.</p>
+<figure class="diagram"><pre class="mermaid">flowchart TD
+  Ui --&gt; Config
+  Ui --&gt; Delivery
+  Ui --&gt; Membership
+  Ui --&gt; Notify
+  Ui --&gt; Sys
+  Rules --&gt; Config
+  Rules --&gt; Delivery
+  Rules --&gt; Notify
+  Notify --&gt; Delivery
+  Notify --&gt; Membership
+  Config --&gt; Delivery
+  Membership --&gt; Delivery
+  Sensor --&gt; Delivery
+  Sys --&gt; Delivery
+  Sys --&gt; Membership
+  Sys --&gt; Mesh
+  Delivery --&gt; Mesh
+  Sensor --&gt; Storage
+  Config --&gt; Storage
+  Delivery --&gt; Storage
+  Notify --&gt; Storage
+  Membership --&gt; Storage
+  Sys --&gt; Storage
+</pre></figure>
+<p>Распределение по ядрам S3 (AD-26): ядро 0 — WiFi, lwIP, <code>Notify</code>, <code>Ui</code>, <code>Sys</code>; ядро 1 — тракт тревоги: <code>Mesh</code> (задача стека Zigbee с UART к RCP и задача актора, UDP), <code>Delivery</code>, <code>Storage</code>, <code>Membership</code>, <code>Sensor</code>, <code>Rules</code>, <code>Config</code>. Приоритеты по убыванию: <code>Mesh</code> &gt; <code>Delivery</code> &gt; <code>Storage</code> &gt; <code>Membership</code> = <code>Sensor</code> &gt; <code>Rules</code> &gt; <code>Config</code> &gt; <code>Notify</code> &gt; <code>Ui</code> &gt; <code>Sys</code>, все ниже lwIP. Числа — <code>GA_TASK_*</code> в <code>ga_config.h</code>.</p>
+<h3>1.4. Слои стека</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Слой</th>
+<th>Актор</th>
+<th>Что решает</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1</td>
+<td><code>Mesh</code></td>
+<td>физический путь: Zigbee и/или UDP по классу <code>c</code>, кадрирование</td>
+</tr>
+<tr>
+<td>L2</td>
+<td><code>Delivery</code></td>
+<td>ACK, повторы, антиповтор, дедуп, буфер, обмен исходными событиями, журнал</td>
+</tr>
+<tr>
+<td>L3</td>
+<td><code>Membership</code></td>
+<td>кто жив, heartbeat, лидер, MQTT-узел</td>
+</tr>
+<tr>
+<td>L4</td>
+<td><code>Config</code></td>
+<td>мягкий конфиг: HLC, LWW, надгробия, водяной знак <code>W</code></td>
+</tr>
+<tr>
+<td>L5</td>
+<td><code>Rules</code></td>
+<td>правила, окна, производные события, эпизоды, команды правил и выходов</td>
+</tr>
+<tr>
+<td>внешний</td>
+<td><code>Notify</code>, <code>Ui</code></td>
+<td>Telegram, Pushover, MQTT, веб</td>
+</tr>
+</tbody>
+</table></div>
+<h3>1.5. Топология</h3>
+<figure class="diagram"><pre class="mermaid">flowchart LR
+  subgraph Site[&quot;Помещения&quot;]
+    C1[&quot;Коллектор H2&quot;] -- Zigbee --- C2[&quot;Коллектор H2&quot;]
+    C1 -- Zigbee --- L1[&quot;Логический 1&quot;]
+    C2 -- Zigbee --- L2[&quot;Логический 2&quot;]
+    L1 -- Zigbee --- L2
+  end
+  L1 -- &quot;WiFi/UDP&quot; --- R[&quot;Роутер&quot;]
+  L2 -- &quot;WiFi/UDP&quot; --- R
+  R --- I((&quot;Интернет&quot;))
+  I --- TG[&quot;Telegram Bot API&quot;]
+  I --- PO[&quot;Pushover&quot;]
+  R --- MQ[&quot;MQTT-брокер&quot;]
+  Admin[&quot;Браузер в LAN&quot;] -- HTTPS --- L1
+  Laptop[&quot;Ноутбук USB / телефон BLE&quot;] -. &quot;ввод в сеть&quot; .- C1
+</pre></figure>
+<hr>
+<p><a id="s2"></a></p>
+<h2>2. Кадр и конверт (AD-5, AD-6, <code>wire-format.md</code>)</h2>
+<h3>2.1. Единственный источник</h3>
+<p>Конверт, ID, HMAC, типы, классы трафика и версии протокола определены только в <code>components/proto</code>; обе прошивки собирают его. <code>proto</code> — чистый C без заголовков IDF и FreeRTOS, HMAC вызывается через порт (в тестах — подделка, на плате — адаптер mbedTLS). Контракт раскладки и доказательство лимита кадра — компаньон спецификации <code>wire-format.md</code>; в коде <code>proto.h</code> пока заглушка, наполняется в истории 1.2. Размеры ниже — в байтах CBOR при <strong>максимальных</strong> значениях полей в указанных границах.</p>
+<h3>2.2. Кадр <code>[body, kid, m]</code></h3>
+<p>CBOR-массив из 3 элементов.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Тип и граница</th>
+<th>Макс. байт</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>заголовок массива</td>
+<td>3 элемента</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>body</code></td>
+<td>байтовая строка ≤ 255 Б (заголовок)</td>
+<td>2 + тело</td>
+</tr>
+<tr>
+<td><code>kid</code></td>
+<td>uint ≤ 23</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>m</code></td>
+<td>байтовая строка 8 Б: HMAC-SHA256 ключом <code>kid</code> (32 Б) над сырыми байтами <code>body</code>, усечённый до <code>GA_PROTO_MAC_BYTES</code></td>
+<td>9</td>
+</tr>
+<tr>
+<td><strong>итого служебное</strong></td>
+<td></td>
+<td><strong>13</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Правила обработки:</p>
+<ul>
+<li>подпись считается над байтами <code>body</code> как они пришли, без каноникализации, и проверяется <strong>до</strong> декодирования;</li>
+<li>пересылающий узел передаёт <code>body</code> байт в байт и никогда не перекодирует;</li>
+<li>автор, повторяющий своё неподтверждённое событие, переподписывает тот же <code>body</code> текущим ключом;</li>
+<li>журнал логического узла хранит тело входящего события байт в байт, как пришло, с подписью (AD-28).</li>
+</ul>
+<h3>2.3. Конверт <code>body = [hdr, t, n, b, q, lwd, ts, p]</code></h3>
+<p>Позиционный массив. Новые поля добавляются только в конец; узел N−1 пропускает лишние хвостовые элементы (AD-6). Поле из середины всегда присутствует.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Поле</th>
+<th>Тип и граница</th>
+<th>Макс. байт</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>—</td>
+<td>заголовок массива</td>
+<td>8 элементов</td>
+<td>1</td>
+</tr>
+<tr>
+<td>0</td>
+<td><code>hdr</code></td>
+<td>uint: <code>v</code> (3 бита, старшие) · поток (2 бита: широковещательный надёжный / адресный надёжный / ненадёжный) · класс <code>c</code> (2 бита: <code>sensor</code> / <code>critical</code> / <code>bulk</code>) · <code>k</code> (1 бит, критично)</td>
+<td>2</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>t</code></td>
+<td>uint; типы, идущие по Zigbee, — коды ≤ 23</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>n</code></td>
+<td>uint64, EUI-64 отправителя</td>
+<td>9</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>b</code></td>
+<td>uint32, загрузка</td>
+<td>5</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>q</code></td>
+<td>uint32, <code>seq</code> своего потока</td>
+<td>5</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>lwd</code></td>
+<td>uint32, <code>q − lw</code>; у ненадёжного потока 0</td>
+<td>5</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>ts</code></td>
+<td>uint64, UTC мс; у команды выхода — стенка HLC команды</td>
+<td>9</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>p</code></td>
+<td>массив, нагрузка типа</td>
+<td>см. §2.4</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>итого без <code>p</code></strong></td>
+<td></td>
+<td><strong>37</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Кадр = 13 + 37 + <code>p</code> ≤ <code>GA_ZB_FRAME_MAX_BYTES</code> (80) ⇔ <code>p</code> ≤ 30 Б.</strong></p>
+<ul>
+<li><code>v</code> 0…7 — мажорная версия; кадры с версией ниже <code>PROTO_MIN_VERSION</code> отвергаются. Четвёртое значение потока или класса в <code>hdr</code> — ошибка формата, кадр отвергается.</li>
+<li>Коды типов 0–23 зарезервированы за типами, идущими по Zigbee. Типы, которые по Zigbee не ходят, могут иметь коды &gt; 23 и большие нагрузки (UDP, история 3.2).</li>
+<li>Незнакомые типы пропускаются (AD-6). Кодировщик отказывает (<code>PROTO_ERR_SIZE</code>) при выходе за границу поля или кадра.</li>
+</ul>
+<h3>2.4. Нагрузки, уже зафиксированные</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Сообщение</th>
+<th>Поля <code>p</code> (позиционно, в скобках — макс. байт)</th>
+<th>Макс. <code>p</code></th>
+<th>Макс. кадр</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>output_cmd</code></td>
+<td><code>cmd_id</code> bstr 8 (9) · <code>channel_id</code> ≤ 65535 (3) · <code>level</code> (2 бита) · <code>value</code> (2 бита) (1) · счётчик HLC ≤ 65535 (3) · <code>dur_s</code> ≤ 43200, 0 = нет (3) · заголовок (1)</td>
+<td>20</td>
+<td><strong>70</strong></td>
+</tr>
+<tr>
+<td><code>output_state</code></td>
+<td><code>channel_id</code> (3) · <code>level</code> (2) · <code>value</code> (2) · подтверждение (2: нет входа / разомкнут / замкнут) · время неизвестно (1) — 7 бит (2) · <code>cmd_id</code> (9) · <code>wall_ms</code> слота (9) · счётчик HLC (3) · заголовок (1)</td>
+<td>27</td>
+<td><strong>77</strong></td>
+</tr>
+<tr>
+<td><code>output_intent</code></td>
+<td><code>channel_id</code> (3) · <code>level</code> · <code>value</code> · вид ключа (2) · <code>dur_s</code> (3) · счётчик HLC (3) · <code>mqtt_key</code> bstr 8 или <code>null</code> (9) · заголовок (1)</td>
+<td>21</td>
+<td><strong>71</strong></td>
+</tr>
+<tr>
+<td>состояние канала</td>
+<td><code>channel_id</code> (3) · вид (3 бита) · здоровье (3 бита) (2) · значение int64 или float (9) · заголовок (1)</td>
+<td>15</td>
+<td><strong>65</strong></td>
+</tr>
+<tr>
+<td>часть <code>local_rules</code></td>
+<td><code>version</code> uint32 (5) · часть (4 бита) · (частей − 1) (4 бита) (2) · правило или <code>null</code> для пустой таблицы (17) · заголовок (1)</td>
+<td>25</td>
+<td><strong>75</strong></td>
+</tr>
+<tr>
+<td>правило в <code>local_rules</code></td>
+<td><code>rule_id</code> (3) · канал-вход (3) · условие ≤ 255: вид фронта или номер порога канала, заданного источнику (AD-15), — числового значения нет (2) · канал-выход (3) · <code>level</code> · <code>value</code> (1) · режим ≤ 23 (1) · <code>dur_s</code> (3) · заголовок (1)</td>
+<td>17</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p>Худший случай — <code>output_state</code>: 77 ≤ 80, запас 3 Б. <code>GA_LOCAL_RULES_MAX</code> ≤ 16 (4 бита на номер части).</p>
+<p><strong>Охват.</strong> Таблица покрывает сообщения выходов и состояние канала. Остальные типы, идущие по Zigbee (сводная запись слияния фронтов — история 2.4, heartbeat — 3.1, <code>ack</code>/<code>delivered</code> — 3.7 и т. д.), добавляют свою строку и тест размера в своей истории.</p>
+<h3>2.5. Ключ, <code>kid</code> и ротация</h3>
+<ul>
+<li>Ключ сети HMAC — 32 Б (<code>GA_NET_KEY_BYTES</code>) на <code>kid</code>; подпись в кадре — 8 Б (<code>GA_PROTO_MAC_BYTES</code>).</li>
+<li><code>kid</code> — 0…23 по кругу; это номер, а не версия ключа. Одновременно действуют не больше двух.</li>
+<li><strong>Ключ HMAC меняется только повторным вводом каждого узла</strong> (USB или Bluetooth, AD-17). Между узлами (Zigbee, UDP) ключ не передаётся никогда, в том числе зашифрованным старым ключом; пакет ключей идёт только зашифрованным кодом с наклейки (AD-23).</li>
+</ul>
+<p><strong>Смена ключа сети (AD-5, Q3 решён 2026-10-07):</strong></p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Шаг</th>
+<th>Что происходит</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Начало</td>
+<td>владелец в локальном вебе (вход и подтверждение) нажимает «Сменить ключ сети»; узел генерирует новый ключ, <code>kid</code> и абсолютный срок <code>T_end</code> = сейчас + <code>GA_KID_TRANSITION</code> (7 сут)</td>
+</tr>
+<tr>
+<td>2. Пакет ключей</td>
+<td>несёт старый и новый ключ, оба <code>kid</code> и <code>T_end</code></td>
+</tr>
+<tr>
+<td>3. Повторный ввод узла</td>
+<td>до <code>T_end</code> узел принимает оба <code>kid</code> и объявляет свои <code>kid</code> в сообщении здоровья heartbeat (AD-19)</td>
+</tr>
+<tr>
+<td>4. Переход (односторонний)</td>
+<td>логический узел начинает подписывать новым, когда новый <code>kid</code> объявили <strong>все</strong> узлы из записей <code>node/&lt;eui&gt;</code> (не только живые) или владелец нажал «Завершить смену ключа»; коллектор — когда новый <code>kid</code> объявили все логические узлы из его heartbeat; к старому узел не возвращается</td>
+</tr>
+<tr>
+<td>5. До <code>T_end</code></td>
+<td>адресные сообщения узлу, не объявившему новый <code>kid</code>, подписываются старым</td>
+</tr>
+<tr>
+<td>6. После <code>T_end</code></td>
+<td>старый ключ удаляется; узел, не введённый заново, отрезан и сам показывает событие «введите узел заново»</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Повторный ввод для смены ключа сохраняет воплощение, <code>boot</code>, буфер событий, слоты <code>protect</code>, счётчик зацикливания и журнал FRAM; меняются только поля ключей в записи provisioning, после ввода автор переподписывает свой буфер текущим ключом (AD-23).</li>
+<li>Пересылка тела со старым <code>kid</code>: <strong>по UDP</strong> — вкладывается в конверт, подписанный текущим ключом; <strong>по Zigbee</strong> — исходный кадр пересылается как есть, пока идёт <code>GA_KID_TRANSITION</code> (вложение не помещается в кадр).</li>
+<li><strong>Ключ Zigbee-сети при этом не меняется.</strong> Его смена — одновременный повторный ввод всех узлов с перерывом связи (вне MVP). Украденный узел до неё сохраняет доступ к Zigbee, но не может подписать кадр.</li>
+</ul>
+<h3>2.6. Совместимость N / N−1 (AD-6)</h3>
+<ul>
+<li>Версия протокола N понимает N−1; кадры с версией ниже <code>PROTO_MIN_VERSION</code> отвергаются; в пределах поддерживаемых версий алгоритм и длина подписи не ослабевают. Поля не удаляются и не меняют смысл внутри мажорной версии; новые поля — только в конец массивов.</li>
+<li>Событие незнакомого типа подтверждается, хранится и реплицируется как непрозрачный <code>body</code>. Маршрутизация и критичность берутся из <code>c</code> и <code>k</code> (в <code>hdr</code>), а не из типа.</li>
+<li>Экземпляр правила с незнакомым шаблоном не исполняется и помечается в вебе.</li>
+<li>Команда выхода не отправляется коллектору, в описании каналов которого нет этого выхода (AD-29).</li>
+<li>Прошивка N читает разметку FRAM N+1 (AD-28).</li>
+</ul>
+<h3>2.7. Типы сообщений</h3>
+<p>Ниже — типы, названные в источниках. Числовые коды типов назначаются в <code>proto</code> (история 1.2 и истории, вводящие тип); раскладка <code>p</code> зафиксирована пока только для типов из §2.4.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Тип (по источникам)</th>
+<th>Поток (§3)</th>
+<th>Класс (§4)</th>
+<th>Источник</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Событие датчика — фронт (в т. ч. пересечение порога)</td>
+<td>широковещательный надёжный</td>
+<td><code>critical</code> для тревог, иначе <code>sensor</code></td>
+<td>AD-8, AD-15</td>
+</tr>
+<tr>
+<td>Снимок состояния канала (последнее значение)</td>
+<td>ненадёжный</td>
+<td><code>sensor</code></td>
+<td>AD-7, AD-8</td>
+</tr>
+<tr>
+<td>Описание каналов (по смене версии)</td>
+<td>не указан</td>
+<td>не указан</td>
+<td>AD-15</td>
+</tr>
+<tr>
+<td>Событие здоровья (узел пропал, канал <code>stale</code>/<code>open</code>/<code>short</code>, глухой узел, разные <code>GA_CONFIG_VERSION</code>…)</td>
+<td>широковещательный надёжный</td>
+<td><code>critical</code> для критичных каналов</td>
+<td>AD-8, AD-19, AD-25</td>
+</tr>
+<tr>
+<td>Производное событие правила, открытие эпизода</td>
+<td>широковещательный надёжный</td>
+<td>не указан</td>
+<td>AD-7, AD-21</td>
+</tr>
+<tr>
+<td>ACK доставки (транспортный)</td>
+<td>ненадёжный</td>
+<td><code>critical</code></td>
+<td>AD-7, AD-12</td>
+</tr>
+<tr>
+<td><code>ack{event_id, by}</code> — подтверждение человеком</td>
+<td>широковещательный надёжный</td>
+<td><code>critical</code></td>
+<td>AD-7, AD-21</td>
+</tr>
+<tr>
+<td><code>delivered</code> (с <code>message_id</code>)</td>
+<td>широковещательный надёжный</td>
+<td><code>critical</code></td>
+<td>AD-7, AD-21</td>
+</tr>
+<tr>
+<td>heartbeat</td>
+<td>ненадёжный</td>
+<td><code>critical</code></td>
+<td>AD-7, AD-12, AD-19</td>
+</tr>
+<tr>
+<td>Сводка «<code>(node, boot)</code> → принятые <code>seq</code>» и запрос недостающих</td>
+<td>не указан</td>
+<td><code>bulk</code></td>
+<td>AD-8, AD-12</td>
+</tr>
+<tr>
+<td>Записи синхронизации мягкого конфига</td>
+<td>адресный надёжный</td>
+<td><code>bulk</code></td>
+<td>AD-7, AD-12, AD-14</td>
+</tr>
+<tr>
+<td>Параметры каналов коллектора (с версией)</td>
+<td>адресный надёжный</td>
+<td>не указан</td>
+<td>AD-7, AD-14</td>
+</tr>
+<tr>
+<td>Команда правила (опросить, burst-интервал; ID + TTL)</td>
+<td>адресный надёжный</td>
+<td>не указан</td>
+<td>AD-7, AD-16</td>
+</tr>
+<tr>
+<td><strong>[2026-10-05]</strong> <code>output_cmd</code></td>
+<td>адресный надёжный, повтор до ACK</td>
+<td><code>critical</code></td>
+<td>AD-29, AD-12</td>
+</tr>
+<tr>
+<td><strong>[2026-10-05]</strong> <code>output_state</code></td>
+<td>снимок (последнее значение, AD-8) — ненадёжный</td>
+<td><code>critical</code></td>
+<td>AD-29, AD-12</td>
+</tr>
+<tr>
+<td><strong>[2026-10-05]</strong> Отказ команды выхода, <code>fault</code> выхода</td>
+<td>фронт (хранится до ACK) — широковещательный надёжный</td>
+<td>не указан</td>
+<td>AD-29</td>
+</tr>
+<tr>
+<td><strong>[2026-10-05]</strong> <code>output_intent</code> (реплицируемое событие)</td>
+<td>широковещательный надёжный</td>
+<td><code>critical</code></td>
+<td>AD-29, AD-12</td>
+</tr>
+<tr>
+<td><strong>[2026-10-05]</strong> <code>local_rules</code> (таблица с версией, по частям)</td>
+<td>адресный надёжный</td>
+<td><code>bulk</code></td>
+<td>AD-7, AD-16, AD-12</td>
+</tr>
+<tr>
+<td>OTA логических узлов</td>
+<td>—</td>
+<td><code>bulk</code> по UDP</td>
+<td>AD-12, AD-18</td>
+</tr>
+<tr>
+<td>OTA коллекторов (Zigbee OTA Upgrade cluster)</td>
+<td>вне <code>proto</code></td>
+<td><code>bulk</code></td>
+<td>AD-12, AD-18</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>boot_ready</code> — внутреннее сообщение актору <code>Delivery</code>, не кадр (§3.2).</p>
+<hr>
+<p><a id="s3"></a></p>
+<h2>3. Идентичность и потоки (AD-7)</h2>
+<h3>3.1. Идентификаторы</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Что</th>
+<th>Формат</th>
+<th>Примечание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Узел</td>
+<td>EUI-64 Zigbee, в тексте — 16 hex</td>
+<td>мягкий конфиг привязан к EUI-64 и <code>channel_id</code></td>
+</tr>
+<tr>
+<td>Существование узла</td>
+<td>ключ мягкого конфига <code>node/&lt;eui&gt;</code> с номером воплощения</td>
+<td>«забыть» — надгробие ключа; повторный ввод — новое воплощение (AD-23)</td>
+</tr>
+<tr>
+<td>Событие</td>
+<td><code>(node, boot, seq)</code>, в тексте <code>node:boot:seq</code>; на проводе — поля <code>n</code>, <code>b</code>, <code>q</code> конверта</td>
+<td><code>seq</code> — номер в широковещательном надёжном потоке</td>
+</tr>
+<tr>
+<td>Производное событие</td>
+<td><code>(rule_id, window_start)</code>, в тексте <code>rule_id@window_start</code></td>
+<td><code>window_start = floor(ts_источника / длина_окна) × длина_окна</code></td>
+</tr>
+<tr>
+<td>Эпизод тревоги</td>
+<td><code>(channel_id, ts первого срабатывания)</code></td>
+<td>AD-21</td>
+</tr>
+<tr>
+<td><code>channel_id</code>, <code>rule_id</code></td>
+<td>uint16 = слот узла-создателя (4 бита) · счётчик этого узла (12 бит); присваивает <code>Config</code> при создании, не переиспользуются</td>
+<td>слот 0–15 логический узел получает при вводе и хранит в своей записи <code>node/&lt;eui&gt;</code>; два узла с одним слотом — конфликт в вебе и событие здоровья, второй вводится заново</td>
+</tr>
+<tr>
+<td><strong>[2026-10-05]</strong> <code>cmd_id</code> (8 Б на проводе)</td>
+<td>первые 8 Б SHA-256 от канонического CBOR-массива</td>
+<td>см. таблицу ниже</td>
+</tr>
+<tr>
+<td><strong>[2026-10-05]</strong> Метка команды выхода</td>
+<td>пара HLC (<code>wall_ms</code>, счётчик): <code>wall_ms</code> — поле <code>ts</code> конверта, счётчик — в нагрузке</td>
+<td>построение — §12.2</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Хеши</strong> (<code>wire-format.md</code>). Канонический CBOR — минимальная длина целых, байтовые строки как есть; тестовые векторы — в <code>proto/test</code>.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Хеш</th>
+<th>Вход SHA-256 (канонический CBOR-массив), первые 8 Б</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cmd_id</code> команды правила (текстовая запись <code>rule_id@event_id</code> причины)</td>
+<td><code>[rule_id, n, b, q]</code> причины; причина — исходное событие, у оконного правила — производное событие</td>
+</tr>
+<tr>
+<td><code>cmd_id</code> ручной команды (= <code>event_id</code> намерения)</td>
+<td><code>[n, b, q]</code> намерения</td>
+</tr>
+<tr>
+<td><code>cmd_id</code> команды MQTT с <code>id</code></td>
+<td><code>[тема, id]</code></td>
+</tr>
+<tr>
+<td>отпечаток сообщения MQTT</td>
+<td><code>[тема, payload]</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>mqtt_key</code> в <code>output_intent</code>: при <code>id</code> — тот же хеш, что <code>cmd_id</code> (вид ключа = id), иначе отпечаток (вид ключа = отпечаток). По <code>mqtt_key</code> ведомый решает, нужна ли страховка (§13.2).</p>
+<h3>3.2. Счётчик загрузок</h3>
+<ul>
+<li><code>boot</code> — постоянный счётчик; увеличивается и записывается синхронно в <code>app_main</code> до создания задач акторов.</li>
+<li><code>Delivery</code> не отправляет ни одного кадра до сообщения <code>boot_ready</code>.</li>
+</ul>
+<h3>3.3. Три потока <code>seq</code></h3>
+<p>Каждый поток начинается с 0 в каждой загрузке; поток указан в <code>hdr</code>.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Поток</th>
+<th>Что несёт</th>
+<th>Антиповтор (AD-17)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Широковещательный надёжный</td>
+<td>события, <code>ack</code>, <code>delivered</code>; его номер и есть ID события; <strong>[2026-10-05]</strong> <code>output_intent</code>, отказы и <code>fault</code> выходов</td>
+<td>окно <code>GA_SEQ_WINDOW</code></td>
+</tr>
+<tr>
+<td>Адресный надёжный</td>
+<td>отдельный счётчик на пару <code>(src, dst)</code>: синхронизация конфига, параметры каналов коллектора, команды правил, <strong>[2026-10-05]</strong> <code>output_cmd</code>, <code>local_rules</code></td>
+<td>окно на поток</td>
+</tr>
+<tr>
+<td>Ненадёжный</td>
+<td>heartbeat, снимки (в т. ч. <strong>[2026-10-05]</strong> <code>output_state</code>), ACK</td>
+<td>не подлежит; свежесть по <code>(boot, seq)</code> своего потока, не по часам, с ключом объекта (узел, тип, объект — канал, выход, номер части); <code>lwd</code> = 0</td>
+</tr>
+</tbody>
+</table></div>
+<p>Адресные и ненадёжные сообщения не блокируют антиповтор у других получателей. Более старый снимок того же объекта никогда не заменяет более новый. Порядок снимков — по выпуску у владельца (<code>boot</code>, <code>seq</code>), не по метке слота: действующим может стать слот с более старой меткой. Получатель хранит во FRAM максимальный известный <code>boot</code> каждого узла и отбрасывает снимки и сообщения <code>lw</code> с меньшим <code>boot</code>.</p>
+<h3>3.4. <code>lw</code> (low-water)</h3>
+<p><code>lw</code> передаётся в конверте разностью <code>lwd = q − lw</code>. Отправитель объявляет, что номера ниже <code>lw</code> в этом потоке он больше никому не повторит. <strong><code>lw</code> — не признак завершения доставки</strong> и не основание удалять событие (§5.5). <code>lw</code> по незакрытым загрузкам дополнительно идёт в heartbeat (§7).</p>
+<hr>
+<p><a id="s4"></a></p>
+<h2>4. Транспорт и классы трафика (AD-12, AD-13)</h2>
+<h3>4.1. Zigbee</h3>
+<ul>
+<li>Distributed security, без координатора; все узлы — роутеры (AD-13).</li>
+<li>Параметры сети и ключ приходят при вводе в сеть (AD-17).</li>
+<li>На логическом узле радио — H2 как RCP по UART; на коллекторе — нативный стек H2. Радио скрыто за интерфейсом <code>Mesh</code>.</li>
+<li>Предел одного кадра — <code>GA_ZB_FRAME_MAX_BYTES</code> = 80 Б.</li>
+</ul>
+<h3>4.2. UDP</h3>
+<ul>
+<li>Второй путь между логическими узлами через роутер; подписан тем же HMAC.</li>
+<li>Коллекторы UDP не имеют.</li>
+<li>При выключенном роутере связь логических узлов идёт по Zigbee.</li>
+<li>Порт, unicast/широковещание, обнаружение пиров, предельный размер кадра по UDP — <strong>отложено в историю 3.2</strong> (Deferred). Доставка и повторы — те же правила AD-8 и AD-17, что для Zigbee.</li>
+<li>Только по UDP тело со старым <code>kid</code> вкладывается в новый конверт (§2.5); типы, не идущие по Zigbee, могут иметь коды &gt; 23 и нагрузки больше 30 Б.</li>
+</ul>
+<h3>4.3. Классы трафика</h3>
+<p>Канал выбирает только <code>Mesh</code> по полю <code>c</code>.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Класс</th>
+<th>Что входит</th>
+<th>Путь</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sensor</code></td>
+<td>данные датчиков</td>
+<td>Zigbee</td>
+</tr>
+<tr>
+<td><code>critical</code></td>
+<td>тревоги, ACK, <code>delivered</code>, <code>ack</code>, heartbeat; <strong>[2026-10-05]</strong> <code>output_cmd</code>, <code>output_state</code>, <code>output_intent</code></td>
+<td>Zigbee <strong>и</strong> UDP одновременно (у коллектора — только Zigbee); получатель отсеивает дубль</td>
+</tr>
+<tr>
+<td><code>bulk</code></td>
+<td>синхронизация конфига и исходных событий, <strong>[2026-10-05]</strong> таблица <code>local_rules</code>, OTA логических узлов, OTA коллекторов по Zigbee</td>
+<td>UDP; по Zigbee — только при недоступности UDP и с ограничением скорости; OTA коллекторов уступает кадрам <code>critical</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Предел скорости <code>bulk</code> по Zigbee <code>GA_BULK_ZB_RATE</code>, длина его очереди и противодавление — <strong>задаются в истории 3.2</strong> (Deferred); <code>bulk</code> всегда уступает <code>critical</code>.</p>
+<hr>
+<p><a id="s5"></a></p>
+<h2>5. Надёжная доставка (AD-8, AD-17)</h2>
+<h3>5.1. Коллектор → все живые логические узлы</h3>
+<ul>
+<li>Коллектор отправляет событие <strong>каждому</strong> логическому узлу, которого <code>Membership</code> считает живым, и повторяет до ACK.</li>
+<li>Список логических узлов коллектор узнаёт только из heartbeat.</li>
+<li>Логический узел подтверждает (ACK) только после записи события в журнал (AD-4, AD-28).</li>
+<li>Повтор уже принятого события получает ACK заново и дальше не передаётся.</li>
+<li>Интервалы и паузы повторов — экспоненциальная пауза (Consistency Conventions); числа <strong>не зафиксированы (Deferred, история 2.4 / 3.3)</strong>.</li>
+</ul>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant S as Sensor (коллектор)
+  participant D as Delivery (коллектор)
+  participant A as Логический A (LEADER)
+  participant B as Логический B (FOLLOWER)
+  participant TG as Telegram
+  participant PO as Pushover
+  S-&gt;&gt;D: фронт дыма, k = критично
+  D-&gt;&gt;D: запись в буфер NVS через Storage
+  par всем живым логическим узлам
+    D-&gt;&gt;A: событие (n, b, q), c = critical, lw
+  and
+    D-&gt;&gt;B: событие (n, b, q), c = critical, lw
+  end
+  A-&gt;&gt;A: запись в журнал FRAM
+  A--&gt;&gt;D: ACK
+  Note over D: одного ACK мало: критичное ждёт всех неглухих и не меньше двух
+  D-&gt;&gt;B: повтор (событие не дошло)
+  B-&gt;&gt;B: запись в журнал FRAM
+  B--&gt;&gt;D: ACK
+  Note over D: событие покидает буфер, lw можно поднять
+  A-&gt;&gt;A: Rules: эпизод (channel_id, ts), тревога
+  B-&gt;&gt;B: Rules: тот же эпизод, та же тревога
+  A-&gt;&gt;TG: sendMessage (LEADER)
+  TG--&gt;&gt;A: message_id
+  A-&gt;&gt;PO: priority = 2, tag = event_id
+  A-&gt;&gt;B: delivered (event_id, recipient, channel, message_id)
+  Note over B: delivered увиден до GA_CRIT_FOLLOWER_T, страховка не нужна
+  PO--&gt;&gt;A: receipt: подтверждено человеком
+  A-&gt;&gt;B: ack (event_id, by)
+  Note over A,B: ack гасит повторы, напоминания и Pushover во всех каналах
+</pre></figure>
+<h3>5.2. Когда событие покидает буфер коллектора</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Событие</th>
+<th>Условие освобождения</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>любое</td>
+<td>только после ACK <strong>хотя бы одного</strong> логического узла</td>
+</tr>
+<tr>
+<td>некритичное</td>
+<td>плюс: подтвердили все живые <strong>или</strong> прошёл <code>GA_ACK_ALL_TIMEOUT</code> (5 мин)</td>
+</tr>
+<tr>
+<td>критичное</td>
+<td>подтвердили все живые <strong>неглухие</strong> логические узлы, и не меньше двух, если неглухих два и больше</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Пока версия параметров каналов не подтверждена логическим узлом (AD-14), коллектор хранит все свои фронты как критичные.</li>
+<li>Неподтверждённое критичное не вытесняется и не удаляется по числу попыток.</li>
+</ul>
+<h3>5.3. Глухой узел</h3>
+<ul>
+<li>Логический узел, живой по heartbeat, но не подтвердивший ни одного кадра за <code>GA_ACK_ALL_TIMEOUT</code> и не меньше <code>GA_DEAF_MIN_RETRIES</code> (10) повторов, коллектор объявляет глухим.</li>
+<li>Одно критичное событие здоровья на эпизод глухоты («🔧 Узел «&lt;имя&gt;» не принимает события»); узел исключается из ожидаемых.</li>
+<li>Первый ACK снимает глухоту.</li>
+<li>Исключение из ожидаемых ACK (глухой, пропавший узел) не освобождает узел от событий: вернувшись, он добирает недостающее обменом с другими логическими узлами (§6.1). Цепочка надёжности: коллектор забывает событие только после ACK, ACK — это запись во FRAM, обмен доводит событие до каждого живого логического узла.</li>
+</ul>
+<h3>5.4. Буфер коллектора и слияние</h3>
+<ul>
+<li>Хранится в NVS через <code>Storage</code>, бюджет записей <code>GA_COLLECTOR_NVS_BUDGET</code> (2000/сут) — это бюджет износа, а не места.</li>
+<li>При исчерпании бюджета:</li>
+</ul>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Что</th>
+<th>Политика</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>первый критичный фронт канала</td>
+<td>пишется всегда, сверх бюджета</td>
+</tr>
+<tr>
+<td>сводная запись слияния критичных</td>
+<td>не чаще раза в <code>GA_COLLECTOR_CRIT_MERGE_PERSIST</code> (60 с); между записями счётчик и последний фронт живут в RAM</td>
+</tr>
+<tr>
+<td>квоты остальных</td>
+<td>записи критичного сверх бюджета их не уменьшают</td>
+</tr>
+<tr>
+<td>слоты <code>protect</code></td>
+<td>из своего резерва <code>GA_OUTPUT_NVS_RESERVE</code></td>
+</tr>
+<tr>
+<td><code>hold</code></td>
+<td>по своей квоте <code>GA_OUTPUT_HOLD_WRITES_DAY</code>, затем выход в «выкл»</td>
+</tr>
+<tr>
+<td>параметры каналов, таблица локальных правил</td>
+<td>пишутся как обычно (редкие правки)</td>
+</tr>
+<tr>
+<td>некритичные фронты</td>
+<td>только в RAM, с событием здоровья</td>
+</tr>
+<tr>
+<td>снимки</td>
+<td>в NVS не пишутся никогда</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Снимки состояния хранят только последнее значение канала.</li>
+<li>Порядок вытеснения при переполнении: снимки → старейшие некритичные фронты. Критичное не вытесняется.</li>
+<li>Сверх <code>GA_COLLECTOR_CRIT_PER_CHANNEL</code> (4) критичные фронты одного канала сливаются в сводную запись: первый, последний и счётчик; место — резерв <code>GA_COLLECTOR_CRIT_RESERVE</code> (32 события).</li>
+<li>Сводная запись получает новый <code>seq</code>, несёт диапазон поглощённых номеров (включая прежний номер перевыпущенной сводной записи) и сама требует ACK.</li>
+</ul>
+<h3>5.5. Антиповтор и правила <code>lw</code> (AD-17)</h3>
+<p><strong>Окно получателя.</strong> На каждый надёжный поток — окно принятых <code>seq</code> размером <code>GA_SEQ_WINDOW</code> (512).</p>
+<ul>
+<li>База окна = max(непрерывный префикс принятых, <code>lw</code> этого потока из кадра); база никогда не уменьшается.</li>
+<li>Кадр за пределами окна не подтверждается — отправитель повторит.</li>
+<li>Непринятое никогда не считается дублем.</li>
+<li>Повтор принятого получает ACK заново и дальше не передаётся.</li>
+</ul>
+<p><strong>Когда отправитель поднимает <code>lw</code>.</strong> Только за номерами, которые он больше <strong>никому</strong> не повторит и содержимое которых учтено:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Случай</th>
+<th>Условие</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>широковещательное событие</td>
+<td>покинуло буфер по правилам выпуска AD-8 (§5.2); критичное — только после ACK всех живых неглухих логических узлов и не меньше двух</td>
+</tr>
+<tr>
+<td>некритичное</td>
+<td>вытеснено</td>
+</tr>
+<tr>
+<td>фронт</td>
+<td>поглощён слиянием (сводная запись несёт диапазон)</td>
+</tr>
+<tr>
+<td>адресное сообщение</td>
+<td>подтвердил получатель, истёк TTL или заменено новой версией</td>
+</tr>
+</tbody>
+</table></div>
+<p>Ограничения:</p>
+<ul>
+<li><code>lw</code> не перекрывает неподтверждённое критичное, содержимое которого не перенесено в другую запись буфера;</li>
+<li><code>lw</code> ограничивает только окно антиповтора, а не обмен недостающими между логическими узлами (§6);</li>
+<li>продвижение <code>lw</code> — <strong>не признак завершения доставки</strong> и не основание удалять событие; удаление решает только AD-8.</li>
+</ul>
+<h3>5.6. Приём через перезагрузки: <code>accept(node, boot, seq)</code></h3>
+<p><code>lw</code> относится к тройке (узел, загрузка, поток). Получатель хранит окна последних <code>GA_DEDUP_BOOTS</code> (4) загрузок узла.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Загрузка кадра</th>
+<th>Решение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>текущая</td>
+<td>решает окно</td>
+</tr>
+<tr>
+<td>новее текущей</td>
+<td>новая загрузка: открывается новое окно (номер загрузки только растёт)</td>
+</tr>
+<tr>
+<td>известная прошлая</td>
+<td>решает её окно; если окна уже нет — <code>seq</code> ≥ её <code>lw</code> из последнего heartbeat отправителя</td>
+</tr>
+<tr>
+<td>неизвестная, старше хранимых</td>
+<td>принимается, только если загрузка не закрыта и <code>seq</code> ≥ её <code>lw</code> из сообщения <code>lw</code> текущей загрузки отправителя</td>
+</tr>
+<tr>
+<td>неизвестная, данных о её <code>lw</code> ещё нет</td>
+<td>кадр <strong>не подтверждается</strong> и не засчитывается в глухоту; получатель запрашивает список <code>lw</code> адресно</td>
+</tr>
+<tr>
+<td>закрытая</td>
+<td>не принимается</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Закрытие загрузки:</strong> её номер меньше <code>min_open_boot</code> из ядра heartbeat отправителя или её <code>lw</code> дошёл до конца загрузки. Отсутствие загрузки в списке — не признак закрытия.</li>
+<li><strong><code>lw</code> прошлых загрузок после перезагрузки отправителя</strong> = минимальный <code>seq</code> её записей в NVS. Номера, которых в NVS нет (некритичное только в RAM), считаются вытесненными; загрузка без записей в NVS закрыта.</li>
+<li><strong><code>accept()</code> действует только на кадры, полученные напрямую от узла-источника.</strong> Событие, пришедшее обменом от логического узла, принимается по подписи источника и дедупу по <code>event_id</code> журнала; закрытость и <code>lw</code> на него не действуют, от повтора его защищает антиповтор потока пира. Событие из обмена с <code>ts</code> старше начала журнала получателя записывается без эффектов.</li>
+<li>Перезагрузка коллектора с неподтверждённым событием не теряет его: событие прошлой загрузки повторяется и принимается.</li>
+<li>На логическом узле точка фиксации — запись журнала; окно дедупа выводится из журнала (AD-28).</li>
+</ul>
+<hr>
+<p><a id="s6"></a></p>
+<h2>6. Репликация между логическими узлами и журнал (AD-8, AD-28)</h2>
+<h3>6.1. Обмен исходными событиями (anti-entropy)</h3>
+<ul>
+<li>Логические узлы обмениваются сводками «<code>(node, boot)</code> → принятые <code>seq</code>» и запрашивают недостающее.</li>
+<li>Сводка ограничена журналом того, у кого событие есть, а не <code>lw</code>. Источник — любой узел, у которого событие есть; глухой и пропавший узел тоже добирает.</li>
+<li>Событие из обмена принимается по подписи источника и <code>event_id</code> (§5.6).</li>
+<li>Класс <code>bulk</code>; повторная синхронизация не создаёт дублей.</li>
+<li>Цель: все логические узлы считают правила из одного и того же множества исходных событий (AD-16).</li>
+<li>Период <code>GA_SYNC_PERIOD</code>, формат сводки и запроса, предел событий за проход <code>GA_SYNC_MAX_EVENTS</code> — <strong>отложено в историю 3.5</strong> (Deferred). Что сравнивается, зафиксировано в AD-8.</li>
+<li>Синхронизация конфига к одному пиру идёт адресным потоком <code>(src, dst)</code>; медленный пир не останавливает приём у третьего узла.</li>
+</ul>
+<h3>6.2. Журнал событий</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Свойство</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Регион</td>
+<td>«Журнал входящих = история событий», владелец <code>Delivery</code>, 96 КБ (<code>GA_FRAM_INBOX</code>)</td>
+</tr>
+<tr>
+<td>Вид</td>
+<td>кольцо, только добавление</td>
+</tr>
+<tr>
+<td>Тело события</td>
+<td>хранится байт в байт как пришло, с подписью</td>
+</tr>
+<tr>
+<td>Заголовки</td>
+<td>бинарные с версией; содержимое — CBOR</td>
+</tr>
+<tr>
+<td>Порядок записи</td>
+<td>тело с CRC → сдвиг указателя головы (две копии с номером и CRC) → подтверждение <code>Storage</code> → ACK</td>
+</tr>
+<tr>
+<td>Восстановление</td>
+<td>отбрасывается только недописанное после зафиксированной головы; битая запись внутри — пропуск с событием здоровья</td>
+</tr>
+</tbody>
+</table></div>
+<h3>6.3. Курсоры потребителей</h3>
+<ul>
+<li>Курсор «обработано» каждого потребителя журнала хранит <code>Delivery</code>: <code>Rules</code> (события), <code>Notify</code> (<code>ack</code>, <code>delivered</code>, производные), <code>Config</code> (записи синхронизации конфига).</li>
+<li>Потребитель сдвигает курсор после подтверждения всех своих эффектов.</li>
+<li>Журнал не вытесняет дальше минимального курсора. Порядок вытеснения: обработанное старше окна → обработанное в окне (событие здоровья «история правил неполна») → необработанное <strong>никогда</strong>.</li>
+<li>Глубина журнала ≥ <code>GA_RULE_WINDOW_MAX</code> по <code>ts</code> источника.</li>
+</ul>
+<h3>6.4. Регионы FRAM, влияющие на протокол</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Регион</th>
+<th>Владелец</th>
+<th>Старт</th>
+<th>Константа</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Суперблок A/B</td>
+<td><code>Storage</code></td>
+<td>2 × 256 Б</td>
+<td><code>GA_FRAM_SUPERBLOCK</code>, <code>GA_FRAM_SUPERBLOCK_COPIES</code></td>
+</tr>
+<tr>
+<td>Состояние узла (<code>boot</code>, время уведомлений о перезагрузке)</td>
+<td><code>Sys</code></td>
+<td>256 Б</td>
+<td><code>GA_FRAM_SYS_STATE</code></td>
+</tr>
+<tr>
+<td>Журнал входящих</td>
+<td><code>Delivery</code></td>
+<td>96 КБ</td>
+<td><code>GA_FRAM_INBOX</code></td>
+</tr>
+<tr>
+<td>Дедуп <code>(node, boot)</code> → окно <code>seq</code></td>
+<td><code>Delivery</code></td>
+<td>3 КБ</td>
+<td><code>GA_FRAM_DEDUP</code></td>
+</tr>
+<tr>
+<td>Исходящая очередь и единицы доставки</td>
+<td><code>Notify</code></td>
+<td>32 КБ</td>
+<td><code>GA_FRAM_OUTBOX</code></td>
+</tr>
+<tr>
+<td>Состояние <code>Notify</code> (<code>offset</code>, <code>update_id</code>, receipts, индекс <code>ack</code>/<code>delivered</code>/<code>message_id</code>; журнал страховочных записей MQTT ≤ <code>GA_MQTT_INSURE_MAX</code> × ~64 Б + уплотнение)</td>
+<td><code>Notify</code></td>
+<td>8 КБ</td>
+<td><code>GA_FRAM_NOTIFY_STATE</code></td>
+</tr>
+<tr>
+<td>Мягкий конфиг</td>
+<td><code>Config</code></td>
+<td>48 КБ</td>
+<td><code>GA_FRAM_CONFIG</code></td>
+</tr>
+<tr>
+<td>Буфер MQTT</td>
+<td><code>Notify</code></td>
+<td>24 КБ</td>
+<td><code>GA_FRAM_MQTT</code></td>
+</tr>
+<tr>
+<td>Статистика 7 дней</td>
+<td><code>Membership</code></td>
+<td>4 КБ</td>
+<td><code>GA_FRAM_STATS</code></td>
+</tr>
+<tr>
+<td>Резерв под миграцию</td>
+<td>—</td>
+<td>остаток</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p>Разметку определяет суперблок; константы используются только при первом форматировании. Миграция только добавляет или растит регионы и идёт после самоподтверждения новой прошивки.</p>
+<hr>
+<p><a id="s7"></a></p>
+<h2>7. Членство и heartbeat (AD-19)</h2>
+<h3>7.1. Heartbeat — набор сообщений</h3>
+<p>Heartbeat — набор сообщений ненадёжного потока, каждое в один Zigbee-кадр. Класс <code>critical</code> (у коллектора — только Zigbee); свежесть — по <code>(boot, seq)</code> с ключом объекта (§3.3).</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Сообщение</th>
+<th>Поля</th>
+<th>Кто несёт</th>
+<th>Зачем</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ядро</td>
+<td>роль, статус (<code>LEADER</code> / <code>FOLLOWER</code> / <code>YIELDED</code> / <code>ISOLATED</code>), uplink, <code>uplink_since</code>, <code>leader_priority</code>, <code>GA_CONFIG_VERSION</code></td>
+<td>все (uplink и приоритет — логический)</td>
+<td>выбор лидера (AD-9), расхождение версий — событие здоровья (AD-25)</td>
+</tr>
+<tr>
+<td>ядро</td>
+<td><code>mqtt_up</code></td>
+<td>логический</td>
+<td>выбор MQTT-узла</td>
+</tr>
+<tr>
+<td>ядро</td>
+<td><code>min_open_boot</code></td>
+<td>все</td>
+<td>закрытие прошлых загрузок (§5.6)</td>
+</tr>
+<tr>
+<td>ядро</td>
+<td>версия параметров каналов, версия таблицы локальных правил</td>
+<td>коллектор</td>
+<td>повышение <code>k</code> при расхождении (AD-14), расхождение таблицы видно в вебе</td>
+</tr>
+<tr>
+<td>отдельное сообщение</td>
+<td>водяной знак конфига <code>W</code></td>
+<td>логический</td>
+<td>надгробия, догон конфига (AD-14)</td>
+</tr>
+<tr>
+<td>сообщения <code>lw</code> по частям</td>
+<td><code>lw</code> незакрытых загрузок</td>
+<td>все</td>
+<td>приём через перезагрузки (AD-17)</td>
+</tr>
+<tr>
+<td>сообщения здоровья</td>
+<td>здоровье каналов, флаги наличия внешних секретов (без самих секретов), объявленные <code>kid</code> (AD-5), время отправителя</td>
+<td>все (флаги — логический)</td>
+<td><code>stale</code>/<code>open</code>/<code>short</code>; коллектор берёт время из heartbeat (AD-20)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Раскладка каждого сообщения и тест размера — <strong>история 3.1</strong> (строка в <code>wire-format.md</code>).</p>
+<h3>7.2. Интервалы и обнаружение пропажи</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Константа</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Период heartbeat логического узла</td>
+<td><code>GA_HB_LOGIC</code></td>
+<td>10 с</td>
+</tr>
+<tr>
+<td>Период heartbeat коллектора</td>
+<td><code>GA_HB_COLLECTOR</code></td>
+<td>30 с</td>
+</tr>
+<tr>
+<td><code>stale</code> узла или канала</td>
+<td><code>GA_STALE_MISSED_HB</code></td>
+<td>3 пропущенных heartbeat</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Пропавший узел, канал в <code>stale</code>/<code>open</code>/<code>short</code> — событие шаблона «здоровье»; критичное, если на узле или канале есть критичное.</li>
+<li>Существование узла выводится из ключа <code>node/&lt;eui&gt;</code> мягкого конфига (AD-23).</li>
+<li>Ежедневный heartbeat-отчёт владельцу и всем подписчикам (<code>GA_DAILY_REPORT_TIME</code>, 09:00) делает молчание значимым.</li>
+<li><strong>[2026-10-05]</strong> Коллектор с выходами переводит слоты <code>manual</code> и <code>auto</code> в безопасное состояние после <code>GA_OUTPUT_LINK_LOST</code> (90 с) без heartbeat логических узлов (§12.5).</li>
+<li><strong>[2026-10-05]</strong> Логический узел, увидевший новый <code>boot</code> коллектора (поле <code>b</code> его heartbeat), шлёт ему последнюю известную команду каждого слота каждого выхода, включая <code>release</code> и <code>off</code>. До первого heartbeat после загрузки коллектор держит <code>manual</code> и <code>auto</code> в безопасном состоянии.</li>
+<li><strong>[2026-10-05]</strong> Время из heartbeat задаёт <code>ts</code> команд локальных правил коллектора (§12.5).</li>
+</ul>
+<hr>
+<p><a id="s8"></a></p>
+<h2>8. Лидерство, аренда Telegram, страховка, MQTT-узел</h2>
+<h3>8.1. Выбор лидера (AD-9)</h3>
+<p>Каждый логический узел вычисляет лидера сам по данным heartbeat:</p>
+<ol>
+<li>кандидаты — логические узлы со здоровым uplink;</li>
+<li>минимальный <code>leader_priority</code>;</li>
+<li>затем минимальный EUI-64.</li>
+</ol>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Правило</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>uplink</td>
+<td>бинарный с гистерезисом: потерян после <code>GA_UPLINK_LOST</code> (60 с неудач), восстановлен после <code>GA_UPLINK_RESTORED</code> (120 с успеха)</td>
+</tr>
+<tr>
+<td>возврат лидерства лучшему по приоритету</td>
+<td>только при <code>uplink_since</code> ≥ <code>GA_LEADER_RETURN</code> (15 мин)</td>
+</tr>
+<tr>
+<td>ручное назначение</td>
+<td><code>leader_override{node, until}</code> в мягком конфиге; действует сразу до <code>until</code> или отмены</td>
+</tr>
+<tr>
+<td>старт</td>
+<td>узел без пиров, но с uplink — <code>LEADER</code>, но не раньше <code>GA_JOIN_GRACE</code> (30 с); до этого или до первого heartbeat пира — <code>FOLLOWER</code></td>
+</tr>
+</tbody>
+</table></div>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Статус</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LEADER</code></td>
+<td>отправляет наружу, <code>getUpdates</code>, держит аренду; сервер OTA коллекторов; источник времени без NTP</td>
+</tr>
+<tr>
+<td><code>FOLLOWER</code></td>
+<td>копия очереди; страхует критичное через <code>GA_CRIT_FOLLOWER_T</code></td>
+</tr>
+<tr>
+<td><code>YIELDED</code></td>
+<td>после 409: нет <code>getUpdates</code> и некритичной отправки</td>
+</tr>
+<tr>
+<td><code>ISOLATED</code></td>
+<td>нет пиров и нет uplink: только копит</td>
+</tr>
+</tbody>
+</table></div>
+<h3>8.2. Аренда Telegram и 409 (AD-10)</h3>
+<ul>
+<li>В Telegram и Pushover отправляет и делает <code>getUpdates</code> (long polling) только <code>LEADER</code>; MQTT обслуживает MQTT-узел (§8.4, §13).</li>
+<li><code>LEADER</code> держит в чате владельца закреплённое сообщение-аренду <code>lease{node, priority, until}</code>, продлевает каждые <code>GA_LEASE_RENEW</code> (5 мин), срок <code>GA_LEASE_TTL</code> (15 мин).</li>
+<li>Машинная часть — вторая строка сообщения: <code>&lt;code&gt;lease:1:&lt;eui64&gt;:&lt;priority&gt;:&lt;until_epoch&gt;&lt;/code&gt;</code>; аренда с незнакомой версией формата считается просроченной (история 3.9).</li>
+<li>409 на <code>getUpdates</code> значит только «есть второй опрашивающий». Узел читает аренду через <code>getChat.pinned_message</code>:</li>
+<li>свежая и чужая → <code>YIELDED</code> до её истечения;</li>
+<li>просрочена → забирает её;</li>
+<li>аренды нет → <code>YIELDED</code> на <code>GA_YIELD_BASE</code> × (1 + ранг), <code>GA_YIELD_BASE</code> = 30 с.</li>
+<li><strong>Ранг</strong> — позиция узла среди живых логических узлов в порядке выбора лидера (<code>leader_priority</code>, затем EUI-64), с 0.</li>
+<li>В <code>YIELDED</code> нет <code>getUpdates</code> и некритичной отправки. Некритичное <code>LEADER</code> отправляет, только пока до конца его аренды остаётся не меньше <code>GA_LEASE_RENEW</code>.</li>
+<li>Критичное отправляется и без аренды (<code>YIELDED</code>, страховка AD-11). Внешний API не идемпотентен: падение между отправкой и <code>delivered</code> даёт внешний дубль — это допущено (не потерять &gt; не флудить); Pushover гасит копии по <code>tag</code>.</li>
+<li>Узел, ставший <code>LEADER</code>, принимает отправку всех недоставленных элементов.</li>
+</ul>
+<p><strong>Команды Telegram без повторного исполнения:</strong></p>
+<ul>
+<li><code>offset</code> реплицируется как максимум; множество выполненных <code>update_id</code> — как объединение с обрезкой до старших <code>GA_TG_EXECUTED_IDS</code> (64).</li>
+<li>Оба сохраняются и реплицируются <strong>до</strong> исполнения команды. Исполнение — после подтверждения <code>offset</code> хотя бы одним живым пиром; без пиров — после записи в FRAM.</li>
+<li>Не исполняется команда: с известным <code>update_id</code>; с <code>update_id</code> ≤ минимального в множестве; с <code>date</code> старше <code>GA_CMD_MAX_AGE</code> (10 мин).</li>
+<li>Узел без состояния <code>Notify</code> от пиров начинает с <code>offset = −1</code> и полученное последнее обновление не исполняет — только если за <code>GA_JOIN_GRACE</code> не услышан ни один пир, а аренда просрочена или отсутствует.</li>
+</ul>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant A as Логический A (LEADER)
+  participant B as Логический B (FOLLOWER)
+  participant TG as Telegram Bot API
+  A-&gt;&gt;TG: getUpdates (long polling)
+  A-&gt;&gt;TG: продление аренды каждые GA_LEASE_RENEW
+  Note over A: питание A выключено
+  B-&gt;&gt;B: нет heartbeat A: 3 × GA_HB_LOGIC, A = stale
+  B-&gt;&gt;B: пересчёт: B — лучший кандидат со здоровым uplink, B = LEADER
+  B-&gt;&gt;TG: getUpdates
+  alt A ещё опрашивает (разрыв внутренней сети)
+    TG--&gt;&gt;B: 409 Conflict
+    B-&gt;&gt;TG: getChat
+    TG--&gt;&gt;B: pinned_message: lease:1:EUI_A:prio:until
+    alt аренда A свежая
+      B-&gt;&gt;B: YIELDED до until
+    else аренда просрочена
+      B-&gt;&gt;TG: закрепить lease:1:EUI_B:prio:until
+      B-&gt;&gt;TG: getUpdates
+    end
+  else A молчит
+    TG--&gt;&gt;B: обновления
+    B-&gt;&gt;TG: закрепить свою аренду
+  end
+  B-&gt;&gt;B: принять отправку всех недоставленных элементов
+  B-&gt;&gt;TG: отправка (дубль по единице доставки не больше одного)
+</pre></figure>
+<h3>8.3. Страховка критичного (AD-11)</h3>
+<ul>
+<li><code>FOLLOWER</code> или <code>YIELDED</code>, не увидевший <code>delivered</code> по всем единицам доставки критичного события за <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг) (<code>GA_CRIT_FOLLOWER_T</code> = 45 с; у <code>FOLLOWER</code> при живом лидере — просто <code>GA_CRIT_FOLLOWER_T</code>), отправляет недоставленные единицы сам и публикует <code>delivered</code>. Увидев <code>delivered</code>, не отправляет. Задержка по рангу разводит страхующих во времени.</li>
+<li>Mute никогда не глушит критичное.</li>
+<li>Если открытие эпизода слито с уже доставленным, страховка AD-11 не применяется (§9.4).</li>
+</ul>
+<h3>8.4. Роль «MQTT-узел» [2026-10-05]</h3>
+<ul>
+<li>Вычисляется отдельно от лидера: среди логических узлов с <code>mqtt_up</code> берётся минимальный <code>leader_priority</code>, затем минимальный EUI-64.</li>
+<li><code>mqtt_up</code> — гистерезис <code>GA_MQTT_UP_LOST</code> (30 с) / <code>GA_MQTT_UP_RESTORED</code> (60 с); объявляется в heartbeat.</li>
+<li>Интернет для роли не нужен — работает с локальным брокером.</li>
+<li>MQTT-узел публикует зеркало и создаёт <code>output_intent</code> по командам MQTT (§13).</li>
+</ul>
+<hr>
+<p><a id="s9"></a></p>
+<h2>9. Внешняя доставка (AD-21, AD-22)</h2>
+<h3>9.1. Единица доставки</h3>
+<ul>
+<li>Единица доставки — <code>(event_id, recipient, channel)</code>.</li>
+<li><code>delivered</code> публикует тот узел, который отправил, по каждой единице, вместе с <code>message_id</code>. Это реплицируемое событие широковещательного надёжного потока.</li>
+<li>Исходящий элемент удаляется, когда все единицы доставлены или окончательно отклонены.</li>
+<li>MQTT не входит в единицы доставки и не задерживает удаление исходящего элемента.</li>
+</ul>
+<h3>9.2. Исходящая очередь</h3>
+<ul>
+<li>Всегда принимает элемент. При переполнении вытесняется старейший некритичный со сводкой «пропущено N».</li>
+<li>Критичным — квота <code>GA_OUTBOX_CRIT_QUOTA</code> (25 % очереди); сверх неё критичные элементы одного канала сливаются в один с «+N».</li>
+<li>Хранится журналом с уплотнением в регионе <code>Notify</code> (32 КБ).</li>
+<li><code>Notify</code> идемпотентен по <code>event_id</code> в пределах <code>GA_RULE_WINDOW_MAX</code> + <code>GA_NOTIFY_IDEMP_MARGIN</code> (1 ч + 15 мин). Перезагрузка не повторяет уже доставленные уведомления.</li>
+</ul>
+<h3>9.3. Подтверждение человеком</h3>
+<ul>
+<li>Подтверждение в любом канале (кнопка «Принято», receipt Pushover) — реплицируемое событие <code>ack{event_id, by}</code>.</li>
+<li>Оно гасит повторы, напоминания и Pushover во всех каналах.</li>
+</ul>
+<h3>9.4. Эпизод тревоги</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Правило</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Кто вычисляет</td>
+<td><code>Rules</code>, только по <code>ts</code> источника</td>
+</tr>
+<tr>
+<td>Ключ</td>
+<td><code>(channel_id, ts первого срабатывания)</code>; после публикации не меняется</td>
+</tr>
+<tr>
+<td>Публикация</td>
+<td>открытие — производное событие через <code>Delivery</code></td>
+</tr>
+<tr>
+<td>Слияние</td>
+<td>из пересекающихся открытий одного канала все узлы оставляют открытие с минимальным <code>ts</code>; остальные сливаются в него; выжившее наследует их единицы доставки, <code>message_id</code> и <code>ack</code>, их <code>event_id</code> — синонимы выжившего для <code>Notify</code></td>
+</tr>
+<tr>
+<td>Слитое уже доставлено</td>
+<td>выжившее даёт только правку сообщения, без Pushover и без страховки AD-11</td>
+</tr>
+<tr>
+<td>Норма</td>
+<td>неактивное значение при <code>health = ok</code></td>
+</tr>
+<tr>
+<td>Закрытие</td>
+<td>после возврата в норму нет срабатывания с <code>ts</code> в течение <code>GA_ALARM_REARM</code> (10 мин); решение не раньше <code>GA_ALARM_REARM</code> + <code>GA_EPISODE_GRACE</code> (60 с) после нормы</td>
+</tr>
+<tr>
+<td>Повтор в открытом эпизоде</td>
+<td>правка сообщения тревоги («повторных срабатываний: N»); если правка невозможна — новое сообщение без Pushover</td>
+</tr>
+<tr>
+<td>Новая тревога (с Pushover для критичного)</td>
+<td>срабатывание после закрытия эпизода; позже <code>ack</code> + <code>GA_ALARM_REARM</code>; позже начала эпизода + <code>GA_EPISODE_MAX</code> (1 ч)</td>
+</tr>
+<tr>
+<td>Mute</td>
+<td>если первое срабатывание некритичного эпизода пришлось на mute, первое срабатывание после mute отправляется как тревога</td>
+</tr>
+<tr>
+<td>Восстановление</td>
+<td><code>GA_EPISODE_MAX</code> ≤ <code>GA_RULE_WINDOW_MAX</code>, поэтому открытый эпизод всегда восстанавливается из журнала</td>
+</tr>
+<tr>
+<td>Опоздавшее за горизонт</td>
+<td>эпизоды не меняет, даёт отдельную тревогу «с опозданием»</td>
+</tr>
+</tbody>
+</table></div>
+<h3>9.5. Pushover</h3>
+<ul>
+<li>Только критичные события, на ключ группы Pushover.</li>
+<li><code>priority=2</code> (emergency): retry <code>GA_PUSHOVER_RETRY</code> (60 с, не меньше 30 с), expire <code>GA_PUSHOVER_EXPIRE</code> (3 ч, не больше 3 ч).</li>
+<li><code>tag = event_id</code>; лишние копии отменяются <code>cancel_by_tag</code>.</li>
+<li>Подтверждение по receipt → <code>ack</code>.</li>
+</ul>
+<h3>9.6. Telegram: права и правила отправки (AD-22)</h3>
+<ul>
+<li>Подписка по PIN; владельца отписать нельзя. Команды принимаются только от подписанных чатов; отправитель — по <code>from.id</code>.</li>
+<li>Опасные команды (перезагрузка, лидер) — только от владельца и с подтверждением (<code>GA_CONFIRM_TTL</code>, 2 мин).</li>
+<li>Правила и конфиг — только локальный веб. Критичное правило выключается только там и временно (≤ <code>GA_CRIT_DISABLE_MAX</code>, 12 ч), с событием всем подписчикам.</li>
+<li>Каждое сообщение подписано узлом-отправителем и статусом (<code>🏠 гараж · ведущий</code>).</li>
+<li>Уведомления о перезагрузке — только владельцу, с причиной сброса; ≤ 1 за <code>GA_REBOOT_NOTIFY_UNEXPECTED</code> (15 мин) / <code>GA_REBOOT_NOTIFY_PLANNED</code> (6 ч).</li>
+<li>Между отправками — пауза <code>GA_TG_SEND_GAP</code> (350 мс).</li>
+<li><strong>[2026-10-05]</strong> Выходами из бота управляют владелец и операторы, только выходами с флагом <code>bot_control</code> (кнопки «вкл / выкл / авто»); в вебе — после входа.</li>
+</ul>
+<p>Команды бота: <code>/subscribe &lt;PIN&gt;</code>, <code>/unsubscribe</code>, <code>/status</code>, «Датчики», «События», «🔕 Моя тишина», <code>/test</code>, отчёты, «Принято», <code>/mute N</code> / <code>/unmute</code>, «Статистика», <code>/mode &lt;режим&gt;</code>, <code>/leader &lt;узел&gt;</code>, <code>/reboot</code>; <strong>[2026-10-05]</strong> экран «Выходы».</p>
+<hr>
+<p><a id="s10"></a></p>
+<h2>10. Синхронизация мягкого конфига (AD-14)</h2>
+<h3>10.1. Уровни</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Уровень</th>
+<th>Что</th>
+<th>Где меняется</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H (прошивка)</td>
+<td>манифест датчиков (и <strong>[2026-10-05]</strong> выходов: пин, вход подтверждения), драйверы, шаблоны правил</td>
+<td>перепрошивка</td>
+</tr>
+<tr>
+<td>S (мягкий)</td>
+<td>имена, зоны, назначение и <code>criticality</code> каналов, интервалы, пороги, экземпляры и наборы правил (<code>severity</code>), режимы, граф зон, <code>leader_priority</code>, <code>leader_override</code>, подписчики и владелец, окно mute, маршрутизация уведомлений, настройки MQTT; <strong>[2026-10-05]</strong> параметры выходов (<code>max_on</code>, безопасное состояние, флаги <code>mqtt_control</code> и <code>bot_control</code>)</td>
+<td>веб, реплицируется</td>
+</tr>
+<tr>
+<td>R (рантайм)</td>
+<td>значения, здоровье</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<h3>10.2. Слияние</h3>
+<ul>
+<li>Писатель S — только <code>Config</code>.</li>
+<li>Версия на ключ; слияние LWW по HLC <code>(wall_ms, counter, EUI-64)</code>.</li>
+<li>Удаление — надгробие, не стирание.</li>
+<li>Синхронизация передаёт записи в порядке HLC адресным надёжным потоком <code>(src, dst)</code>, класс <code>bulk</code>.</li>
+<li>Узел объявляет в heartbeat водяной знак <code>W</code>: «есть все записи с HLC ≤ <code>W</code>».</li>
+<li>Надгробие удаляется, когда оно старше <code>GA_TOMBSTONE_TTL</code> (30 сут) и <code>W</code> каждого живого логического узла не меньше его HLC.</li>
+<li>Конфликт одновременных правок одного ключа показывается в вебе.</li>
+<li>Правка на узле A видна на узле B за ≤ 1 мин (CAP-3).</li>
+</ul>
+<h3>10.3. Вернувшийся узел</h3>
+<ul>
+<li>Отсутствие узла измеряют соседи.</li>
+<li>Узел, отсутствовавший дольше <code>GA_TOMBSTONE_TTL</code>, забирает конфиг у соседа с наибольшим <code>W</code>, работавшего всё это время; свои расхождения показывает в вебе как конфликты.</li>
+<li>Если такого соседа нет (отсутствовали все), узлы сливают конфиги обычным образом.</li>
+</ul>
+<h3>10.4. Параметры каналов коллектора</h3>
+<ul>
+<li>Коллектор получает параметры своих каналов надёжным адресным сообщением с версией, хранит копию через <code>Storage</code>, сообщает её версию в heartbeat.</li>
+<li>Пока версия расходится — правила повышения <code>k</code> (§5.7), а коллектор хранит все фронты как критичные (§5.2).</li>
+<li>Пересечение порога, заданного каналу в S, источник выдаёт как фронт (хранится до ACK), а не как снимок (AD-15).</li>
+<li><strong>[2026-10-05]</strong> Таблица локальных правил идёт коллектору так же (§11.6).</li>
+</ul>
+<p>Формат записи синхронизации конфига и раскладка HLC конфига в кадре — <strong>не зафиксировано, решается в истории 3.10</strong>.</p>
+<hr>
+<p><a id="s11"></a></p>
+<h2>11. Правила (AD-16)</h2>
+<h3>11.1. Детерминизм</h3>
+<ul>
+<li>Все экземпляры правил исполняются на <strong>каждом</strong> логическом узле детерминированно из одного и того же множества исходных событий по <code>ts</code> источника.</li>
+<li>Производное событие получает одинаковый ID <code>rule_id@window_start</code> на всех узлах; <code>Notify</code> отсеивает дубли по <code>event_id</code>.</li>
+<li>Правило = шаблон + экземпляр <code>{id, type, enabled, params, set, severity, notify, when?, ver}</code> + необязательное <code>when</code> (и/или/не, сравнения, режим, время, состояние; без циклов и переменных; ≤ 256 символов, ≤ 8 уровней), проверяемое при сохранении.</li>
+<li>Шаблоны: состояние/порог, скорость изменения, здоровье, совпадение, цепочка, трасса по графу зон, агрегация, действие/команда, режим/расписание.</li>
+</ul>
+<h3>11.2. Окна и восстановление</h3>
+<ul>
+<li>Окно любого правила ≤ <code>GA_RULE_WINDOW_MAX</code> (1 ч), проверяется при сохранении.</li>
+<li>Состояние окон производное: после перезагрузки восстанавливается проходом журнала от <code>ts</code> курсора <code>Rules</code> минус <code>GA_RULE_WINDOW_MAX</code>. Эффекты при этом выдаются всегда; <code>Notify</code> отсеивает их по <code>event_id</code>.</li>
+</ul>
+<h3>11.3. Горизонт опоздания</h3>
+<ul>
+<li>Событие с <code>ts</code> &lt; <code>now − GA_RULE_WINDOW_MAX</code> обрабатывают только правила одного события (с пометкой «с опозданием»); оконные правила его не учитывают.</li>
+<li>Базовая тревога критичного канала — всегда правило одного события; горизонт на неё не действует.</li>
+<li>Опоздавшее событие эпизоды не меняет и даёт отдельную тревогу «с опозданием».</li>
+</ul>
+<h3>11.4. Команды правил</h3>
+<ul>
+<li>Команды (опросить, burst-интервал) — адресные надёжные сообщения через <code>Delivery</code>; у получателя доходят до <code>Sensor</code> событием по подписке.</li>
+<li>Несут ID и TTL и откатываются сами (пример: интервал 1 с на 5 мин).</li>
+</ul>
+<h3>11.5. Действие «установить выход» [2026-10-05]</h3>
+<ul>
+<li>Каждый логический узел шлёт <code>output_cmd</code> сам, без лидера (§12).</li>
+<li>Причина — исходное событие, у оконного правила — производное событие (AD-7). <code>cmd_id = rule_id@event_id</code> причины, <code>ts</code> = <code>ts</code> причины (у производного — <code>window_start</code>).</li>
+<li>Уровень <code>protect</code>, если итоговое <code>k</code> причины критично (с учётом повышения «<code>k</code> не ниже X»), иначе <code>auto</code>.</li>
+<li><code>Rules</code> <strong>не выдаёт</strong> команд выходов при проходе журнала до своего курсора (восстановление после перезагрузки). Включающие команды (<code>on</code>, <code>pulse</code>) не выдаются и для причины с <code>ts</code> &lt; <code>now − GA_CMD_MAX_AGE</code>; <code>release</code> и <code>off</code> выдаются всегда.</li>
+<li><code>release</code> правила адресуется всем слотам, занятым командами этого правила; <code>release</code> по <code>ack</code> получает <code>ts</code> = max(<code>ts</code> подтверждения, <code>ts</code> включившей команды) + 1.</li>
+<li>У правил тревоги действие выхода срабатывает на <strong>открытие эпизода</strong> AD-21, а не на каждое срабатывание.</li>
+<li>Режим действия задаётся в правиле:</li>
+</ul>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Режим</th>
+<th>Когда выход освобождается</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>«пока активно»</td>
+<td><code>release</code> при возврате канала в норму</td>
+</tr>
+<tr>
+<td>«до подтверждения»</td>
+<td><code>release</code> по <code>ack</code> эпизода</td>
+</tr>
+<tr>
+<td>«импульс»</td>
+<td>команда <code>pulse</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3>11.6. Локальные правила на коллекторе [2026-10-05]</h3>
+<p>Новая редакция AD-16: «Коллектор правил не исполняет» больше не действует.</p>
+<ul>
+<li>Коллектор исполняет только <strong>локальные</strong> правила: правило одного события своего канала с действием на свой выход, без окна и без <code>when</code>. <code>Config</code> помечает правило как локальное при сохранении; в вебе оно отмечено «локально на &lt;узел&gt;».</li>
+<li>Таблица локальных правил (≤ <code>GA_LOCAL_RULES_MAX</code> = 16) приходит коллектору адресным надёжным сообщением <code>local_rules</code> с версией, по частям (класс <code>bulk</code>).</li>
+<li><strong>Атомарная смена:</strong> коллектор копит части отдельно от действующей таблицы, полную версию проверяет и пишет через <code>Storage</code> в неактивную копию A/B, затем переключает копии одной записью. До этого действует прежняя таблица; неполная версия отбрасывается при приходе более новой версии или перезагрузке.</li>
+<li>Версию действующей таблицы коллектор сообщает в heartbeat; расхождение видно в вебе.</li>
+<li>Таблицей владеет <code>Sensor</code> коллектора (таблица акторов каркаса).</li>
+<li>Команда локального правила несёт тот же <code>cmd_id</code>, что у логических узлов, и тот же <code>ts</code>, если коллектор знает время (иначе — §12.5). Узел выхода применяет её один раз по <code>cmd_id</code>.</li>
+<li>Логические узлы исполняют то же правило; всё остальное считают только они.</li>
+</ul>
+<hr>
+<p><a id="s12"></a></p>
+<h2>12. Выходы (AD-29) [2026-10-05]</h2>
+<h3>12.1. Канал-выход</h3>
+<ul>
+<li><strong>Принцип.</strong> Для любого реле «выключено» — безопасное положение, «включено» — временное состояние, всегда ограниченное <code>max_on</code> (снять предел нельзя). Нагрузка подбирается так, чтобы «выключено» было безопасно.</li>
+<li><strong>Защитный клапан протечки — только моторный шаровой:</strong> питание нужно лишь на ход, положение он держит без питания; <code>protect</code> = <code>on</code> на время хода закрывает его. Соленоиды для защиты не используются: нормально-открытый откроет воду при сбое, нормально-закрытый пропускает воду только под постоянным питанием, а выход по <code>max_on</code>, при перезагрузке и при зацикливании уходит в «выкл» (<code>sensor-catalog.md</code>).</li>
+<li>Канал вида <code>output</code> (к <code>binary | numeric | counter | enum</code> добавлен <code>output</code>), подтип <code>switch | buzzer</code>.</li>
+<li>Только на коллекторе; в манифесте — пин и необязательный вход подтверждения (вторая пара контактов реле). Выход описывается тем же самоописанием каналов, что и датчики.</li>
+<li>Катушки реле 24 В — только через ключ (транзистор с диодом или ULN2003), от отдельного питания 24 В.</li>
+<li>Параметры в S: <code>max_on</code> (по умолчанию <code>GA_OUTPUT_MAX_ON_DEFAULT</code> = 1 ч, не больше <code>GA_OUTPUT_MAX_ON_MAX</code> = 12 ч; действует на всех выходах всегда и не снимается; меняется только в локальном вебе после входа и с подтверждением, никакая команда — правило, бот, MQTT — на него не влияет), безопасное состояние <code>off | hold</code>, флаги <code>mqtt_control</code>, <code>bot_control</code>.</li>
+<li>Совместимость N/N−1: команда выхода не отправляется коллектору, в описании каналов которого нет этого выхода.</li>
+</ul>
+<h3>12.2. Команда <code>output_cmd</code> и метка команды</h3>
+<pre><code>output_cmd{cmd_id, channel_id, level, value: on|off|release|pulse, ts, dur_s}
+</code></pre>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Смысл</th>
+<th>На проводе (§2.4)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cmd_id</code></td>
+<td>8 Б SHA-256 канонического CBOR-массива: <code>[rule_id, n, b, q]</code> причины; <code>[n, b, q]</code> намерения; <code>[тема, id]</code> для MQTT с <code>id</code> (§3.1)</td>
+<td>bstr 8</td>
+</tr>
+<tr>
+<td><code>channel_id</code></td>
+<td>выход, uint16</td>
+<td>≤ 65535</td>
+</tr>
+<tr>
+<td><code>level</code></td>
+<td><code>protect</code> / <code>manual</code> / <code>auto</code></td>
+<td>2 бита</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td><code>on</code>, <code>off</code>, <code>release</code> (очистить слот), <code>pulse</code></td>
+<td>2 бита</td>
+</tr>
+<tr>
+<td><code>ts</code></td>
+<td>метка: <code>wall_ms</code> — поле <code>ts</code> конверта, счётчик HLC — в нагрузке</td>
+<td>uint64 + uint ≤ 65535</td>
+</tr>
+<tr>
+<td><code>dur_s</code></td>
+<td>длительность, с; 0 — нет</td>
+<td>≤ 43200 (<code>GA_OUTPUT_MAX_ON_MAX</code>); у <code>pulse</code> 0 &lt; <code>dur_s</code> ≤ <code>GA_BUZZER_MAX</code> — <code>pulse</code> без длительности кодировщик отвергает (<code>PROTO_ERR_FORMAT</code>), узел выхода отклоняет</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Адресное надёжное сообщение класса <code>critical</code>, целиком в одном Zigbee-кадре (≤ 70 Б), повторяется до ACK.</li>
+<li><strong>Срок команды</strong> = стенка её метки + <code>dur_s</code>, если получатель знает время; иначе — от приёма по монотонным часам. Команда с уже прошедшим сроком не исполняется: отклонение <code>expired</code>, не отказ пользователю. TTL сообщения = срок команды; без <code>dur_s</code> — без TTL.</li>
+<li>Адресаты — коллекторы, поэтому <code>critical</code> здесь означает только Zigbee (AD-12).</li>
+<li><strong>Срок, слот и предел — три разных понятия.</strong></li>
+</ul>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Понятие</th>
+<th>Что это</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>срок команды</td>
+<td><code>ts</code> + <code>dur_s</code> (<code>dur_s</code> = 0 — до замены): сколько команда действительна и сколько её повторяют до ACK</td>
+</tr>
+<tr>
+<td>слот</td>
+<td>живёт, пока его команда действительна или не заменена</td>
+</tr>
+<tr>
+<td><code>max_on</code></td>
+<td>физический предел включённого выхода: считается узлом по монотонным часам от перехода в <code>on</code>, не зависит от команд и сети</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>max_on</code> действует на всех выходах всегда и не снимается. Срок по стенке HLC — приближение с точностью до расхождения часов; физическую безопасность даёт только <code>max_on</code>.
+- Совпадение 64-битных <code>cmd_id</code> двух разных команд одного выхода допускается как вероятностное (≈ 3·10⁻⁸ при 10⁶ команд).
+- В буфере отправителя команда заменяется только командой того же выхода и уровня с бо́льшей меткой (для <code>lw</code> это «заменено новой версией», AD-17).</p>
+<p><strong>Метка команды — одна для всех источников.</strong> Пара HLC (<code>wall_ms</code>, счётчик). Порядок двух команд одного слота — по (<code>wall_ms</code>, счётчик, <code>cmd_id</code>), побеждает бо́льшая, «новее» — строго больше. При переполнении счётчика <code>wall_ms</code> += 1, счётчик = 0.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Источник</th>
+<th><code>wall_ms</code></th>
+<th>Счётчик</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>правило логического узла</td>
+<td><code>ts</code> причины (у оконного — <code>window_start</code>)</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>release</code> по <code>ack</code></td>
+<td>max(<code>ts</code> подтверждения, <code>ts</code> включившей команды) + 1 мс</td>
+<td>0</td>
+</tr>
+<tr>
+<td>ручная команда (веб, бот, MQTT) и страховка ведомого</td>
+<td>HLC принявшего узла в момент приёма, не меньше последней известной ему пары этого выхода</td>
+<td>по HLC</td>
+</tr>
+<tr>
+<td>локальное правило</td>
+<td>время последнего heartbeat + монотонное время</td>
+<td>по HLC</td>
+</tr>
+<tr>
+<td>локальное правило без heartbeat с загрузки</td>
+<td>максимальная пара слотов из NVS</td>
+<td>+ 1, флаг «время неизвестно»</td>
+</tr>
+<tr>
+<td>проход журнала</td>
+<td>команд не выдаёт</td>
+<td>—</td>
+</tr>
+<tr>
+<td>повтор после перезагрузки коллектора</td>
+<td>исходная метка без изменений — срок считается от неё, истёкшая команда не воскресает (<code>expired</code>)</td>
+<td>без изменений</td>
+</tr>
+</tbody>
+</table></div>
+<p>Команда правила и её <code>release</code> поэтому одинаковы на всех логических узлах.</p>
+<h3>12.3. Арбитраж на узле выхода</h3>
+<p>Узел выхода — единственный владелец его состояния (AD-1).</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Слот (по убыванию)</th>
+<th>Кто пишет</th>
+<th>Где хранится</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>protect</code></td>
+<td>правила, у которых итоговое <code>k</code> причины критично</td>
+<td>NVS через <code>Storage</code>, <strong>до ACK</strong>, из резерва <code>GA_OUTPUT_NVS_RESERVE</code> (8) вне бюджета событий — по одной записи на выход; выходов на коллекторе не больше резерва (static assert при сборке манифеста: <code>N_OUTPUTS ≤ GA_OUTPUT_NVS_RESERVE</code>); вместе с меткой, <code>cmd_id</code> и остатком <code>max_on</code>/срока</td>
+</tr>
+<tr>
+<td><code>manual</code></td>
+<td>веб, бот, MQTT через <code>output_intent</code></td>
+<td>RAM</td>
+</tr>
+<tr>
+<td><code>auto</code></td>
+<td>остальные правила</td>
+<td>RAM</td>
+</tr>
+</tbody>
+</table></div>
+<p>Правила:</p>
+<ol>
+<li>Команда, включая <code>release</code>, занимает слот своего уровня, только если она <strong>новее</strong> слота по (<code>wall_ms</code>, счётчик, <code>cmd_id</code>).</li>
+<li>Очищенный (<code>release</code>), истёкший (срок команды) или отсечённый (<code>max_on</code>) слот хранит метку последней команды. Команда не новее её отклоняется с причиной <code>stale</code>.</li>
+<li><code>stale</code> с тем же значением, что уже действует, — не отказ. Отказ <code>stale</code> сообщается только источнику ручной команды (ответ бота или веба, <code>result</code> MQTT); отклонения команд правил пишутся в журнал без уведомления.</li>
+<li>Действует старший слот со значением; без них выход выключен.</li>
+<li>Дедуп по паре (<code>cmd_id</code>, <code>level</code>): повтор подтверждается и не применяется заново. Тот же <code>cmd_id</code> с более высоким уровнем — повышение: оно очищает нижний слот, сохраняя его пару.</li>
+<li>Отказ (например, <code>manual</code> против действующего <code>protect</code>) — событие с причиной («защита держит: протечка подвала»).</li>
+<li>Бот: кнопка «авто» отправляет <code>release</code> уровня <code>manual</code>, и выход возвращается правилам (история 10.4).</li>
+</ol>
+<p><strong>Перезагрузка коллектора.</strong></p>
+<ul>
+<li>Слот <code>protect</code> восстанавливается из NVS; отсчёт <code>max_on</code> и срока продолжается с сохранённого остатка.</li>
+<li><strong>Счётчик зацикливания</strong> хранится в NVS коллектора (вне бюджета событий, не больше одной записи за загрузку). Он увеличивается записью <strong>до подачи уровня на пин</strong> при первом включении любого выхода в течение <code>GA_OUTPUT_BOOT_STABLE</code> (10 мин) после загрузки; не пишется при значении ≥ <code>GA_OUTPUT_BOOT_LOOP</code>; сбрасывается после <code>GA_OUTPUT_BOOT_STABLE</code> непрерывной работы. «Подряд» — без стабильного периода между загрузками; отключение питания считается так же.</li>
+<li>На <code>GA_OUTPUT_BOOT_LOOP</code> (3) все слоты <strong>всех</strong> выходов, включая <code>protect</code> и <code>hold</code>, <strong>без исключений</strong> уходят в <code>off</code> с <code>fault</code> (критичное событие здоровья «защита снята»). Поэтому защитная нагрузка подбирается безопасной без питания.</li>
+<li>Через <code>GA_OUTPUT_BOOT_STABLE</code> в <code>fault</code> коллектор сообщает это в heartbeat, и логические узлы повторяют последнюю команду каждого слота, как при новом <code>boot</code>. Повторное зацикливание удваивает интервал до следующей попытки. <code>fault</code> можно снять и из веба.</li>
+<li>До первого heartbeat после загрузки коллектор держит <code>manual</code> и <code>auto</code> в безопасном состоянии. Коллектор, не знающий времени, команды логических узлов <strong>не исполняет и не подтверждает</strong> до первого heartbeat логического узла (отправитель повторит); исключение — локальные правила.</li>
+<li>Логический узел, увидевший новый <code>boot</code> коллектора по полю <code>b</code> его heartbeat, шлёт ему последнюю известную команду <strong>каждого слота каждого выхода</strong>, включая <code>release</code> и <code>off</code>, с её <strong>исходной меткой</strong> — повтор не воскрешает истёкшую команду. Эти команды узел выводит из журнала (намерения и срабатывания правил) и отдельно не хранит.</li>
+</ul>
+<p>Итог: порядок прихода, дубли, перезагрузки и расходящиеся часы не возвращают старое значение (инварианты симулятора).</p>
+<h3>12.4. Источники команд</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Источник</th>
+<th>Кто шлёт <code>output_cmd</code></th>
+<th><code>cmd_id</code></th>
+<th><code>ts</code></th>
+<th>Уровень</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Правило на логических узлах</td>
+<td>каждый логический узел сам, без лидера</td>
+<td>хеш <code>[rule_id, n, b, q]</code> причины</td>
+<td>по таблице §12.2</td>
+<td><code>protect</code> при критичном итоговом <code>k</code>, иначе <code>auto</code></td>
+</tr>
+<tr>
+<td>Локальное правило</td>
+<td>сам коллектор</td>
+<td>тот же</td>
+<td>та же, если коллектор знает время; иначе — §12.2</td>
+<td>тот же</td>
+</tr>
+<tr>
+<td>Ручная команда (веб, бот, MQTT)</td>
+<td>принявший узел — сразу после записи <code>output_intent</code> в FRAM; остальные логические узлы — по приходу события</td>
+<td>хеш <code>[n, b, q]</code> намерения; MQTT с <code>id</code> — хеш <code>[тема, id]</code></td>
+<td>по таблице §12.2</td>
+<td><code>manual</code></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><code>output_intent</code> — реплицируемое событие класса <code>critical</code>: страховка ручной команды — обычная репликация событий. Намерение из MQTT несёт <code>mqtt_key</code> — хеш <code>id</code> или отпечаток (§3.1).</li>
+<li><code>Rules</code> не выдаёт команд выходов при проходе журнала до своего курсора. Включающие команды (<code>on</code>, <code>pulse</code>) не выдаются для причины с <code>ts</code> &lt; <code>now − GA_CMD_MAX_AGE</code>; <code>release</code> и <code>off</code> выдаются <strong>всегда</strong> — лишнее отсеет сравнение пар.</li>
+<li><code>release</code> правила адресуется всем слотам, занятым командами этого правила.</li>
+<li><code>release</code> по <code>ack</code> (режим «до подтверждения») получает <code>ts</code> по таблице §12.2.</li>
+<li>Права: веб — после входа; бот — владелец и операторы, только выходы с <code>bot_control</code>; MQTT — только выходы с <code>mqtt_control</code>.</li>
+</ul>
+<h3>12.5. Безопасность и время на узле выхода</h3>
+<ul>
+<li><code>max_on</code> и <code>GA_BUZZER_MAX</code> (5 мин) отсчитываются от перехода выхода в <code>on</code> и командами не перезапускаются. По истечении узел выключает выход сам, без сети, и публикует <code>output_state</code> с причиной.</li>
+<li>Срок команды — по §12.2; <code>max_on</code> и пределы считаются по монотонным часам узла.</li>
+<li>Безопасное состояние при старте и после <code>GA_OUTPUT_LINK_LOST</code> (90 с) без heartbeat логических узлов — <code>off | hold</code>; действует <strong>только на слоты <code>manual</code> и <code>auto</code></strong>; <code>on</code> запрещён (отвергается при сохранении); <code>hold</code> хранится в NVS со своей суточной квотой записей <code>GA_OUTPUT_HOLD_WRITES_DAY</code> (200) внутри <code>GA_COLLECTOR_NVS_BUDGET</code>; при исчерпании квоты безопасное состояние выхода — <code>off</code> до конца суток, с событием здоровья. Локальные правила продолжают работать (история 10.1).</li>
+<li>Метка команды локального правила — §12.2; без времени она строится от сохранённых слотов, чтобы сохранённый слот не блокировал локальное правило.</li>
+<li>Подтверждение (вторая пара контактов), не совпавшее с командой за <code>GA_OUTPUT_FEEDBACK_TIMEOUT</code> (500 мс), переводит канал в <code>health = fault</code> и создаёт событие здоровья.</li>
+</ul>
+<h3>12.6. Состояние <code>output_state</code></h3>
+<pre><code>output_state{value, level, cmd_id, ts, feedback}
+</code></pre>
+<ul>
+<li>
+<p>На проводе (§2.4, ≤ 77 Б): <code>channel_id</code>, 7 бит (<code>level</code>, <code>value</code>, подтверждение: нет входа / разомкнут / замкнут, «время неизвестно»), <code>cmd_id</code>, <code>wall_ms</code> и счётчик действующего слота.</p>
+</li>
+<li>
+<p><code>ts</code> — пара действующего слота.</p>
+</li>
+<li>Снимок (только последнее значение, AD-8) по смене действующего слота или уровня; не по такту паттерна зуммера.</li>
+<li>Фронтами (хранятся до ACK) идут только отказы и <code>fault</code>.</li>
+<li>Класс <code>critical</code>.</li>
+</ul>
+<h3>12.7. Правило → реле</h3>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant SC as Коллектор-источник (протечка)
+  participant A as Логический A
+  participant B as Логический B
+  participant OC as Коллектор с реле
+  SC-&gt;&gt;A: событие E, k = критично
+  SC-&gt;&gt;B: событие E
+  A--&gt;&gt;SC: ACK
+  B--&gt;&gt;SC: ACK
+  A-&gt;&gt;A: Rules: открытие эпизода, правило R, режим «пока активно»
+  B-&gt;&gt;B: Rules: то же
+  A-&gt;&gt;OC: output_cmd (cmd_id = R@E, protect, on, ts = ts(E))
+  B-&gt;&gt;OC: output_cmd (тот же cmd_id и уровень)
+  OC-&gt;&gt;OC: слот protect, запись в NVS (резерв GA_OUTPUT_NVS_RESERVE)
+  OC--&gt;&gt;A: ACK (только после записи в NVS)
+  OC--&gt;&gt;B: ACK (дубль по паре cmd_id, level, не применяется)
+  OC-&gt;&gt;OC: реле вкл, отсчёт max_on от перехода в on
+  OC-&gt;&gt;OC: проверка подтверждения за GA_OUTPUT_FEEDBACK_TIMEOUT
+  OC-&gt;&gt;A: output_state (снимок): on, protect, cmd_id, feedback
+  OC-&gt;&gt;B: output_state
+  Note over SC,B: канал вернулся в норму
+  A-&gt;&gt;OC: output_cmd (release во все слоты правила R, ts новее)
+  B-&gt;&gt;OC: output_cmd (тот же release)
+  OC-&gt;&gt;OC: слот очищен, хранит пару (ts, cmd_id), реле выкл
+</pre></figure>
+<h3>12.8. Ручная команда из веба или бота</h3>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  actor U as Владелец / оператор
+  participant A as Логический A (принял команду)
+  participant B as Логический B
+  participant OC as Коллектор с реле
+  U-&gt;&gt;A: «вкл» (веб после входа или бот, выход с bot_control)
+  A-&gt;&gt;A: проверка прав и флага
+  A-&gt;&gt;A: output_intent (manual, HLC ts), запись в FRAM
+  A-&gt;&gt;OC: output_cmd (cmd_id = event_id намерения, manual)
+  A-&gt;&gt;B: output_intent (широковещательный надёжный, critical)
+  B--&gt;&gt;A: ACK
+  B-&gt;&gt;OC: output_cmd (тот же cmd_id)
+  alt действует protect или ts не новее слота
+    OC-&gt;&gt;A: событие отказа (protect / stale)
+    A-&gt;&gt;U: «защита держит: …» или отказ stale
+  else
+    OC-&gt;&gt;OC: слот manual, реле вкл
+    OC-&gt;&gt;A: output_state
+    OC-&gt;&gt;B: output_state
+  end
+</pre></figure>
+<h3>12.9. Локальное правило при выключенных логических узлах</h3>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant SN as Sensor коллектора (вход протечки)
+  participant LR as Sensor: таблица локальных правил
+  participant OUT as Выход-зуммер того же коллектора
+  participant L as Логические узлы (выключены)
+  Note over OUT: нет heartbeat дольше GA_OUTPUT_LINK_LOST: manual и auto в безопасном состоянии
+  SN-&gt;&gt;LR: фронт E своего канала
+  LR-&gt;&gt;OUT: команда (cmd_id = R@E, ts = heartbeat + монотонное или пара NVS + 1)
+  OUT-&gt;&gt;OUT: слот уровня по k, зуммер вкл, предел GA_BUZZER_MAX
+  SN-&gt;&gt;SN: E лежит в буфере NVS до ACK
+  Note over L: логические узлы включились
+  L-&gt;&gt;OUT: heartbeat
+  SN-&gt;&gt;L: событие E (повтор)
+  L--&gt;&gt;SN: ACK
+  L-&gt;&gt;L: Rules: то же правило R
+  L-&gt;&gt;OUT: output_cmd (тот же cmd_id R@E, тот же ts)
+  OUT-&gt;&gt;OUT: дубль по паре cmd_id, level, без изменений
+</pre></figure>
+<p>Если <code>ts(E)</code> уже старше <code>GA_CMD_MAX_AGE</code>, логические узлы включающую команду (<code>on</code>, <code>pulse</code>) не выдают — выход держит команда коллектора; <code>release</code> и <code>off</code> они выдают всегда.</p>
+<hr>
+<p><a id="s13"></a></p>
+<h2>13. MQTT (AD-24 в новой редакции) [2026-10-05]</h2>
+<p>MQTT больше не «только выход»: принимаются команды выходам. Зеркало и команды обслуживает MQTT-узел (§8.4), не <code>LEADER</code>.</p>
+<h3>13.1. Подключение и темы</h3>
+<ul>
+<li>Client ID узла — <code>ga2-&lt;EUI-64&gt;</code>, постоянный между перезагрузками и переподключениями.</li>
+<li>Брокер пользователя, MQTT 3.1.1 / 5; <strong>команды выходов — только MQTT 5</strong>. Библиотека <code>espressif/mqtt</code> 1.0.0.</li>
+</ul>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Тема</th>
+<th>Направление</th>
+<th>QoS</th>
+<th>Retain</th>
+<th>Содержимое</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;prefix&gt;/&lt;node&gt;/&lt;channel&gt;/state</code></td>
+<td>публикация</td>
+<td>1</td>
+<td>да</td>
+<td>состояние канала; для выхода — подтверждённое значение после команды</td>
+</tr>
+<tr>
+<td><code>&lt;prefix&gt;/&lt;node&gt;/health</code></td>
+<td>публикация</td>
+<td>1</td>
+<td>да</td>
+<td>здоровье узла</td>
+</tr>
+<tr>
+<td><code>&lt;prefix&gt;/events</code></td>
+<td>публикация</td>
+<td>1</td>
+<td>нет</td>
+<td>события</td>
+</tr>
+<tr>
+<td><code>&lt;prefix&gt;/&lt;node&gt;/&lt;channel&gt;/result</code></td>
+<td>публикация</td>
+<td>1</td>
+<td>нет</td>
+<td>отказ команды с причиной</td>
+</tr>
+<tr>
+<td><code>&lt;prefix&gt;/&lt;node&gt;/&lt;channel&gt;/set</code></td>
+<td>подписка</td>
+<td>1</td>
+<td>retained отбрасываются</td>
+<td>команда выходу, JSON <code>{value, until?, ts?, id?}</code></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Публикация — JSON с <code>event_id</code>. Остальные поля JSON, разбор полей команды и перевод <code>until</code> из JSON в <code>dur_s</code> — <strong>отложено в эпик 10</strong> (Deferred; форма зафиксирована в AD-24).</li>
+<li>Публикует только MQTT-узел; остальные не публикуют. Дубль при смене MQTT-узла распознаётся по <code>event_id</code>.</li>
+<li>Подписки — только на <code>set</code>.</li>
+</ul>
+<h3>13.2. Приём команд</h3>
+<ul>
+<li>Команды принимаются только для выходов с флагом <code>mqtt_control</code>.</li>
+<li>Все логические узлы с логином MQTT подписаны на <code>set</code> <strong>постоянной сессией</strong> MQTT 5: <code>clean_start = false</code>, session expiry <code>GA_MQTT_SESSION_EXPIRY</code> (10 мин, ≥ <code>GA_CMD_MAX_AGE</code>). Брокер держит команду, пока подписчик переподключается.</li>
+<li>Брокер без MQTT 5 или урезанный брокером срок сессии — событие здоровья; на этом узле <code>mqtt_control</code> недоступен.</li>
+<li>Отбрасываются (причина — в <code>result</code>): выход без <code>mqtt_control</code>; retained-сообщение на теме команды; <code>ts</code> из JSON старше <code>GA_CMD_MAX_AGE</code> (10 мин). <code>ts</code> из JSON только проверяет возраст, в арбитраже не участвует.</li>
+<li>MQTT-узел создаёт <code>output_intent</code> и отправляет PUBACK брокеру <strong>только после</strong> записи намерения в FRAM. Запись во FRAM — граница надёжности: репликация к пирам для PUBACK не нужна (без пиров достаточно FRAM).</li>
+<li><strong>Ведомый</strong> пишет страховочную запись (выход, значение, срок, <code>mqtt_key</code>, HLC своего приёма) в отдельный журнал региона <code>Notify</code> во FRAM и только затем отправляет PUBACK.</li>
+<li>На выход хранится одна запись — последнего сообщения (более раннее всё равно проиграет более новому по метке). Записей не больше числа выходов с <code>mqtt_control</code>, ≤ <code>GA_MQTT_INSURE_MAX</code> (32); проверяется при включении флага.</li>
+<li>Запись закрывается тем же условием, что и создание намерения: появилось намерение с этим <code>mqtt_key</code>, принятое после HLC приёма записи, или прошло <code>GA_CMD_MAX_AGE</code>.</li>
+<li>После перезагрузки ведомый возобновляет страховку после синхронизации времени и обмена исходными событиями с пирами; без пиров — после <code>GA_JOIN_GRACE</code>.</li>
+<li><strong>Как отправляется PUBACK.</strong> Его шлёт сам esp-mqtt после возврата обработчика события; обработчик синхронный, в задаче MQTT, и ждёт подтверждения записи от <code>Storage</code> не дольше <code>GA_MQTT_PERSIST_WAIT</code> (200 мс). Отложить или отменить PUBACK библиотека не позволяет, поэтому сбой записи — критичное событие здоровья (FRAM неисправна), а не отказ от PUBACK. Проверяется на версии esp-mqtt из стека в истории 10.6 (Q6).</li>
+<li><strong>PUBACK — не признак доставки, а признак надёжного приёма:</strong> после PUBACK MQTT-узла существует путь восстановления, не зависящий от него (страховочные записи ведомых). Любой подписчик, отправивший PUBACK, после своей перезагрузки может восстановить команду. PUBACK действует на сессию подписчика: сообщение для сессии MQTT-узла брокер держит, пока тот не подтвердит.</li>
+</ul>
+<p><strong>Идемпотентность и отпечаток.</strong></p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Случай</th>
+<th><code>cmd_id</code></th>
+<th>Повтор команды</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>в JSON есть <code>id</code></td>
+<td>хеш <code>[тема, id]</code> — одинаков на всех узлах</td>
+<td>отсекается точно (глобальная идемпотентность)</td>
+</tr>
+<tr>
+<td><code>id</code> нет</td>
+<td><code>event_id</code> намерения</td>
+<td>возможный дубль от страховки безопасен: команда задаёт желаемое состояние, а не переключение</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Отпечаток сообщения — хеш канонического CBOR-массива <code>[тема, payload]</code>; <code>cmd_id</code> при <code>id</code> — хеш <code>[тема, id]</code> (§3.1). Это только признак для страховки, не ключ идемпотентности: одинаковые «вкл» подряд — разные команды.</li>
+<li>Намерение несёт <code>mqtt_key</code>: при <code>id</code> — хеш <code>id</code>, иначе отпечаток (§3.1, §2.4).</li>
+</ul>
+<p><strong>Страховка ведомого</strong> — по <strong>каждому</strong> полученному сообщению: если за <code>GA_MQTT_INSURE_T</code> (10 с) после его приёма не стало известно ни одного намерения <code>manual</code> этого выхода, ведомый создаёт намерение сам — с меткой = HLC своего приёма и тем же правилом <code>cmd_id</code>. Не создаёт, если уже есть намерение с тем же <code>mqtt_key</code> (при <code>id</code> — этот <code>cmd_id</code>, без <code>id</code> — отпечаток), принятое после его приёма. При <code>id</code> повтор отсекает и узел выхода по <code>cmd_id</code>.</p>
+<p>Результат — в <code>state</code> (retained, подтверждённое значение), отказ с причиной — в <code>result</code>.</p>
+<figure class="diagram"><pre class="mermaid">sequenceDiagram
+  autonumber
+  participant BR as MQTT-брокер (MQTT 5)
+  participant M as Логический A (MQTT-узел)
+  participant F as Логический B (ведомый)
+  participant OC as Коллектор с реле
+  BR-&gt;&gt;M: PUBLISH prefix/node/channel/set, value = on
+  BR-&gt;&gt;F: PUBLISH тот же set (постоянная сессия)
+  F-&gt;&gt;F: страховочная запись в FRAM (одна на выход), таймер GA_MQTT_INSURE_T
+  F--&gt;&gt;BR: PUBACK (esp-mqtt, после возврата обработчика)
+  Note over F,BR: обработчик ждёт записи не дольше GA_MQTT_PERSIST_WAIT, PUBACK шлёт библиотека
+  alt MQTT-узел жив
+    M-&gt;&gt;M: проверка: mqtt_control, не retained, ts не старше GA_CMD_MAX_AGE
+    M-&gt;&gt;M: output_intent (manual, HLC, mqtt_key), запись в FRAM
+    M--&gt;&gt;BR: PUBACK (esp-mqtt, после возврата обработчика)
+    M-&gt;&gt;OC: output_cmd (cmd_id: хеш id или event_id намерения)
+    M-&gt;&gt;F: output_intent (репликация, critical)
+    F-&gt;&gt;F: намерение с этим mqtt_key принято, страховочная запись закрыта
+    F-&gt;&gt;OC: output_cmd (тот же cmd_id)
+  else MQTT-узел отказал после приёма
+    Note over F: за GA_MQTT_INSURE_T не стало известно ни одного намерения manual этого выхода
+    F-&gt;&gt;F: свой output_intent, метка = HLC своего приёма, то же правило cmd_id
+    F-&gt;&gt;OC: output_cmd
+  end
+  OC-&gt;&gt;OC: арбитраж по метке, при id — дедуп по cmd_id
+  OC-&gt;&gt;F: output_state (on)
+  Note over F: если F стал MQTT-узлом — PUBLISH state (retained)
+</pre></figure>
+<h3>13.3. Буфер</h3>
+<ul>
+<li>Отдельная ограниченная область FRAM через <code>Storage</code> (<code>GA_FRAM_MQTT</code>, 24 КБ), не общая с исходящей очередью.</li>
+<li>При переполнении вытесняется её старейший элемент; после восстановления соединения буфер отправляется по порядку.</li>
+<li>MQTT не входит в единицы доставки AD-21 и не задерживает удаление исходящего элемента; недоступный брокер не вытесняет тревог.</li>
+</ul>
+<h3>13.4. Настройки</h3>
+<p>Адрес, порт, TLS, префикс, «включено» — мягкий конфиг. Логин и пароль — секрет узла (AD-23), вводится в локальном вебе каждого логического узла.</p>
+<hr>
+<p><a id="s14"></a></p>
+<h2>14. Время, безопасность, ввод в сеть, OTA</h2>
+<h3>14.1. Время (AD-20)</h3>
+<ul>
+<li>Логические узлы синхронизируются по NTP; без NTP источник времени — <code>LEADER</code>.</li>
+<li>Коллектор берёт время из heartbeat логических узлов.</li>
+<li><code>ts</code> события ставит узел-источник; в сообщениях — UTC epoch, локальное время только при выводе.</li>
+<li>Слияние конфига — по HLC, не по голым часам.</li>
+<li>TLS не начинается до синхронизации времени (AD-3).</li>
+<li>Сообщение, пролежавшее в очереди, помечается «с опозданием».</li>
+</ul>
+<h3>14.2. Безопасность сети (AD-17)</h3>
+<ul>
+<li>Каждый кадр подписан HMAC ключом сети (§2). Поддельный или повторённый UDP-кадр отвергается.</li>
+<li>Секреты — только в зашифрованном NVS. Владелец секретов — <code>Sys</code>.</li>
+<li>Логические узлы в серийном исполнении — secure boot v2 (RSA-3072) + flash encryption.</li>
+<li>OTA-образ принимается только с валидной подписью.</li>
+<li>Внешние секреты (токен Telegram, ключи Pushover, логин MQTT, логин и пароль веба) по сети не передаются (AD-23).</li>
+<li>Веб — только HTTPS; сертификаты подписывает собственный CA системы.</li>
+</ul>
+<h3>14.3. Ввод в сеть (AD-17, AD-23)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Способ</th>
+<th>Узел</th>
+<th>Что передаётся</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>USB (раздел секретов, CSV)</td>
+<td>любой</td>
+<td>запись provisioning</td>
+</tr>
+<tr>
+<td>SoftAP (своя WiFi-точка)</td>
+<td>логический</td>
+<td>«Создать новую сеть» или «Присоединиться» с пакетом ключей из веба работающего узла</td>
+</tr>
+<tr>
+<td>BLE, Security 2, PoP с наклейки, Web Bluetooth</td>
+<td>коллектор</td>
+<td>роль, ключ Zigbee-сети, ключ HMAC с <code>kid</code>, имя и зона</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Окно ввода ограничено (<code>GA_PROVISION_WINDOW</code>, 5 мин) и открыто только пока Zigbee-стек не запущен.</li>
+<li>Все способы пишут одну запись provisioning в один namespace.</li>
+<li>Пакет ключей нового узла шифруется кодом с его наклейки, одноразовый, действует <code>GA_KEYPACK_TTL</code> (30 мин).</li>
+<li>Ключи dev и prod разные. Замена секрета, включая ключ сети HMAC, — только повторный ввод узла; передача ключа по сети запрещена.</li>
+<li>Повторный ввод после «забыть узел» создаёт новое воплощение; повторный ввод для смены секрета или ключа сохраняет воплощение, <code>boot</code>, буфер событий, слоты <code>protect</code>, счётчик зацикливания и журнал FRAM (порядок смены ключа — §2.5).</li>
+</ul>
+<h3>14.4. OTA (AD-18)</h3>
+<ul>
+<li>Одновременно обновляется не больше одного узла.</li>
+<li>Логические — по UDP (образ загружают через веб), вместе с RCP-прошивкой своего H2; класс <code>bulk</code>.</li>
+<li>Коллекторы — по Zigbee OTA Upgrade cluster, сервер — <code>LEADER</code>; класс <code>bulk</code>, уступает <code>critical</code>.</li>
+<li>Новая прошивка подтверждает себя только после входа в сеть, иначе откат.</li>
+<li>Сеть с узлами N и N−1 работает без потерь (AD-6).</li>
+<li>Работает ли OTA-сервер на роутере в distributed-сети — открытый вопрос Q4 (история 1.6); запасной путь — своя передача образа через L2 (<code>bulk</code>).</li>
+</ul>
+<hr>
+<p><a id="s15"></a></p>
+<h2>15. Контракты надёжности на границах (<code>durability-contracts.md</code>)</h2>
+<p>Сводка по каждой границе пути события и команды. Новых правил здесь нет: каждая строка ссылается на AD и инварианты симулятора; при расхождении действует каркас.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Граница</th>
+<th>Владелец</th>
+<th>Надёжно, когда</th>
+<th>Можно забыть, когда</th>
+<th>Падение между шагами</th>
+<th>После разрыва</th>
+<th>Дубли</th>
+<th>Основание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Датчик → <code>Sensor</code> коллектора</td>
+<td><code>Sensor</code></td>
+<td>фронт записан в NVS через <code>Storage</code> (критичный — всегда, сверх бюджета)</td>
+<td>после выпуска из буфера по AD-8</td>
+<td>фронт до записи теряется только при отключении питания внутри антидребезга или некритичный фронт, хранившийся только в RAM при исчерпанном бюджете NVS; после загрузки состояние канала читается заново, расхождение даёт фронт</td>
+<td>—</td>
+<td>—</td>
+<td>AD-8, AD-15</td>
+</tr>
+<tr>
+<td>Коллектор → логический узел</td>
+<td>буфер коллектора до ACK</td>
+<td>ACK = событие записано в журнал FRAM получателя</td>
+<td>некритичное — ACK всех живых или <code>GA_ACK_ALL_TIMEOUT</code>; критичное — ACK всех живых неглухих и не меньше двух</td>
+<td>падение после записи до ACK — повтор, повторный ACK, дубль отсекает дедуп</td>
+<td>повтор до ACK; <code>lw</code> не продвигается за повторяемым; кадр загрузки без данных о <code>lw</code> не подтверждается и не засчитывается в глухоту</td>
+<td>внутренние — отсекаются по <code>(node, boot, seq)</code></td>
+<td>AD-8, AD-17, AD-4</td>
+</tr>
+<tr>
+<td>Между логическими узлами</td>
+<td>журнал каждого узла</td>
+<td>событие в журнале любого логического узла</td>
+<td>журнал не вытесняет необработанное и не дальше минимального курсора</td>
+<td>—</td>
+<td>обмен сводками <code>(node, boot) → seq</code> и запрос недостающих; источник — любой узел, у которого событие есть; глухой и пропавший узел тоже добирает; событие из обмена принимается по подписи источника и <code>event_id</code>, закрытость загрузки на него не действует</td>
+<td>отсекаются по <code>event_id</code></td>
+<td>AD-8, AD-28; инвариант «событие коллектора за ограниченное время есть у каждого живого логического узла»</td>
+</tr>
+<tr>
+<td>Журнал → <code>Rules</code>, <code>Notify</code>, <code>Config</code></td>
+<td><code>Delivery</code> хранит курсоры</td>
+<td>курсор сдвигается после подтверждения всех эффектов</td>
+<td>—</td>
+<td>проход журнала от курсора: <code>Notify</code> отсеивает по <code>event_id</code>, <code>Rules</code> не выдаёт команд выходов</td>
+<td>—</td>
+<td>эффекты — повторно, отсеиваются</td>
+<td>AD-16, AD-21, AD-28, AD-29</td>
+</tr>
+<tr>
+<td><code>Notify</code> → Telegram, Pushover</td>
+<td><code>LEADER</code>; критичное — также <code>FOLLOWER</code> и <code>YIELDED</code> (страховка по рангу)</td>
+<td>элемент исходящей очереди записан и реплицирован</td>
+<td>все единицы доставки <code>delivered</code> или окончательно отклонены</td>
+<td>отправлено, но <code>delivered</code> не записан → новый отправитель отправит снова</td>
+<td><code>YIELDED</code> без некритичной отправки; критичное отправляется и без аренды</td>
+<td>внешний дубль допущен: ≤ 1 на смену лидера; Pushover гасит копии по <code>tag</code></td>
+<td>AD-10, AD-11, AD-21</td>
+</tr>
+<tr>
+<td>Лидерство и аренда</td>
+<td>каждый узел вычисляет сам; аренда — в чате владельца</td>
+<td>аренда закреплена с <code>until</code></td>
+<td>после <code>until</code></td>
+<td>—</td>
+<td>409 → чтение аренды → <code>YIELDED</code>; ранг по порядку выбора лидера</td>
+<td>некритичное только при запасе аренды ≥ <code>GA_LEASE_RENEW</code></td>
+<td>AD-9, AD-10</td>
+</tr>
+<tr>
+<td>Команда Telegram</td>
+<td><code>LEADER</code></td>
+<td><code>offset</code> и выполненные <code>update_id</code> записаны и реплицированы до исполнения</td>
+<td>обрезка множества до <code>GA_TG_EXECUTED_IDS</code></td>
+<td>падение до исполнения → новый лидер не исполнит повторно по <code>update_id</code></td>
+<td>новый узел без пиров начинает с <code>offset = −1</code></td>
+<td>не исполняется дважды</td>
+<td>AD-10</td>
+</tr>
+<tr>
+<td>Мягкий конфиг</td>
+<td><code>Config</code></td>
+<td>запись в журнале конфига FRAM</td>
+<td>надгробие — после <code>GA_TOMBSTONE_TTL</code> и <code>W</code> всех живых</td>
+<td>—</td>
+<td>слияние LWW по HLC; долго отсутствовавший узел берёт конфиг у соседа с наибольшим <code>W</code></td>
+<td>идемпотентное слияние</td>
+<td>AD-14</td>
+</tr>
+<tr>
+<td>MQTT → намерение</td>
+<td>MQTT-узел; страховка — каждый ведомый</td>
+<td>MQTT-узел — <code>output_intent</code> во FRAM, затем PUBACK; ведомый — страховочная запись во FRAM, затем PUBACK</td>
+<td>намерение — по правилам журнала AD-28; страховочная запись — одна на выход (последнее сообщение), закрывается намерением с её ключом, принятым после её приёма, или по <code>GA_CMD_MAX_AGE</code></td>
+<td>падение до записи — брокер повторит в сессию этого подписчика; падение после PUBACK — запись поднимается после перезагрузки, страховка возобновляется после синхронизации с пирами; PUBACK шлёт esp-mqtt после возврата обработчика, ждущего записи</td>
+<td>каждый подписчик держит свою постоянную сессию <code>ga2-&lt;EUI-64&gt;</code></td>
+<td>с <code>id</code> — отсекаются по <code>cmd_id</code>; без <code>id</code> — возможны два намерения, безопасны (желаемое состояние)</td>
+<td>AD-24</td>
+</tr>
+<tr>
+<td>Логический узел → узел выхода</td>
+<td>узел выхода — единственный владелец состояния выхода</td>
+<td><code>protect</code> — в NVS до ACK; <code>manual</code>/<code>auto</code> — в RAM</td>
+<td>слот — по сроку команды или замене (метка сохраняется)</td>
+<td>после перезагрузки коллектора логические узлы шлют последнюю команду каждого слота с исходной меткой — истёкшая отклоняется (<code>expired</code>), не воскресает; <code>GA_OUTPUT_BOOT_LOOP</code> перезагрузок во включённом состоянии — безопасное состояние и <code>fault</code> (счётчик в NVS)</td>
+<td>безопасное состояние для <code>manual</code>/<code>auto</code> после <code>GA_OUTPUT_LINK_LOST</code>; <code>protect</code> держится</td>
+<td>отсекаются по (<code>cmd_id</code>, <code>level</code>); старые — <code>stale</code></td>
+<td>AD-29</td>
+</tr>
+<tr>
+<td>Таблица локальных правил</td>
+<td>коллектор</td>
+<td>полная версия в неактивной копии A/B, переключение одной записью</td>
+<td>прежняя копия — после переключения</td>
+<td>неполная версия отбрасывается, действует прежняя</td>
+<td>версия в heartbeat, расхождение видно в вебе</td>
+<td>—</td>
+<td>AD-16</td>
+</tr>
+<tr>
+<td>Смена ключа HMAC</td>
+<td>каждый узел; старт и завершение — владелец в вебе</td>
+<td>новый ключ записан при повторном вводе (оба ключа, оба <code>kid</code>, <code>T_end</code>); воплощение, <code>boot</code>, буфер, <code>protect</code>, FRAM сохраняются</td>
+<td>старый ключ — после <code>T_end</code></td>
+<td>недоведённый перевод: до <code>T_end</code> принимаются оба <code>kid</code>, подписывают старым, пока не все объявили новый</td>
+<td>переход односторонний; узел, не введённый заново, отрезан и сам просит ввода</td>
+<td>—</td>
+<td>AD-5, AD-23</td>
+</tr>
+<tr>
+<td>Снимки (состояние канала, выхода, heartbeat)</td>
+<td>источник</td>
+<td>не хранятся</td>
+<td>заменяются более новым того же объекта по <code>(boot, seq)</code>; меньший <code>boot</code>, чем известный максимум, отбрасывается</td>
+<td>—</td>
+<td>следующий снимок</td>
+<td>безвредны: старый не заменяет новый</td>
+<td>AD-7, AD-8</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Общие правила</strong></p>
+<ul>
+<li>ACK события отправляется только после записи в постоянную память (AD-4); PUBACK MQTT-узла — после записи намерения во FRAM, PUBACK ведомого — после записи страховочной записи во FRAM (AD-24). Любой подписчик, отправивший ACK или PUBACK, после своей перезагрузки может восстановить принятое.</li>
+<li>Продвижение <code>lw</code> — не признак завершения доставки и не основание удалять событие (AD-17).</li>
+<li>Внешний мир (Telegram, Pushover) не идемпотентен: между отправкой и <code>delivered</code> возможен дубль, он допущен ради «не потерять» (AD-10).</li>
+<li>Физическую безопасность выхода дают <code>max_on</code> и безопасное состояние на самом узле, не сеть и не часы (AD-29).</li>
+<li>Для любого реле «выключено» — безопасное положение, «включено» — временное и всегда ограничено <code>max_on</code>, предел не снимается (AD-29).</li>
+<li>Ключ HMAC между узлами не передаётся никогда — только повторным вводом (AD-5); кадры ниже <code>PROTO_MIN_VERSION</code> отвергаются (AD-6).</li>
+</ul>
+<hr>
+<p><a id="s16"></a></p>
+<h2>16. Таймеры и константы</h2>
+<p>Все длительности в <code>ga_config.h</code> — миллисекунды (<code>uint32</code>), размеры — байты. «В <code>ga_config.h</code>» — есть ли константа в файле сейчас.</p>
+<h3>16.1. Сеть, лидерство, доставка</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Константа</th>
+<th>Значение</th>
+<th>Смысл</th>
+<th>В <code>ga_config.h</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GA_CRIT_FOLLOWER_T</code></td>
+<td>45 с</td>
+<td>ведомый страхует критичное</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_UPLINK_LOST</code></td>
+<td>60 с</td>
+<td>uplink потерян</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_UPLINK_RESTORED</code></td>
+<td>120 с</td>
+<td>uplink восстановлен</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_LEADER_RETURN</code></td>
+<td>15 мин</td>
+<td>возврат лидерства приоритетному</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_JOIN_GRACE</code></td>
+<td>30 с</td>
+<td>пауза до лидерства и <code>getUpdates</code></td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_HB_LOGIC</code> / <code>GA_HB_COLLECTOR</code></td>
+<td>10 с / 30 с</td>
+<td>период heartbeat</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_STALE_MISSED_HB</code></td>
+<td>3</td>
+<td>пропущенных heartbeat до <code>stale</code></td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_LEASE_RENEW</code> / <code>GA_LEASE_TTL</code></td>
+<td>5 мин / 15 мин</td>
+<td>аренда Telegram</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_YIELD_BASE</code></td>
+<td>30 с</td>
+<td>пауза <code>YIELDED</code> × (1 + ранг)</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_SEQ_WINDOW</code></td>
+<td>512</td>
+<td>окно антиповтора</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_DEDUP_BOOTS</code></td>
+<td>4</td>
+<td>хранимых окон загрузок</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_ACK_ALL_TIMEOUT</code></td>
+<td>5 мин</td>
+<td>ожидание ACK всех</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_DEAF_MIN_RETRIES</code></td>
+<td>10</td>
+<td>повторов до «глухого»</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_KID_TRANSITION</code></td>
+<td>7 сут</td>
+<td>смена ключа HMAC</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_ZB_FRAME_MAX_BYTES</code></td>
+<td>80 Б</td>
+<td>один Zigbee-кадр</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_PROTO_MAC_BYTES</code> / <code>GA_NET_KEY_BYTES</code></td>
+<td>8 Б / 32 Б</td>
+<td>длина подписи HMAC-SHA256 в кадре / ключа сети</td>
+<td>нет (история 1.2)</td>
+</tr>
+<tr>
+<td><code>GA_SYNC_PERIOD</code> / <code>GA_SYNC_MAX_EVENTS</code></td>
+<td>задаётся в истории 3.5</td>
+<td>обмен недостающими событиями: период / событий за проход</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_BULK_ZB_RATE</code></td>
+<td>задаётся в истории 3.2</td>
+<td>предел скорости <code>bulk</code> по Zigbee</td>
+<td>нет</td>
+</tr>
+</tbody>
+</table></div>
+<h3>16.2. Буферы и память</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Константа</th>
+<th>Значение</th>
+<th>Смысл</th>
+<th>В <code>ga_config.h</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GA_COLLECTOR_CRIT_RESERVE</code></td>
+<td>32 события</td>
+<td>резерв критичного в буфере коллектора</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_COLLECTOR_CRIT_PER_CHANNEL</code></td>
+<td>4</td>
+<td>критичных фронтов канала до слияния</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_COLLECTOR_CRIT_MERGE_PERSIST</code></td>
+<td>60 с</td>
+<td>запись сводной записи критичного в NVS сверх бюджета — не чаще</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_COLLECTOR_NVS_BUDGET</code></td>
+<td>2000 / сут</td>
+<td>бюджет записей NVS коллектора</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_OUTBOX_CRIT_QUOTA</code></td>
+<td>25 %</td>
+<td>квота критичного в исходящей очереди</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_STORAGE_CHUNK</code></td>
+<td>512 Б</td>
+<td>кусок фоновой записи</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_FLASH_OP_MAX_MS</code></td>
+<td>20 мс</td>
+<td>одна операция записи во флеш</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_TICK_JITTER</code></td>
+<td>50 мс</td>
+<td>допуск таймаута после <code>next_deadline</code></td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_FRAM_*</code></td>
+<td>см. §6.4</td>
+<td>регионы FRAM</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_TASK_*</code></td>
+<td>ядро, приоритет, стек</td>
+<td>карта задач AD-26</td>
+<td>да</td>
+</tr>
+</tbody>
+</table></div>
+<h3>16.3. Правила, эпизоды, команды</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Константа</th>
+<th>Значение</th>
+<th>Мягкая</th>
+<th>В <code>ga_config.h</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GA_RULE_WINDOW_MAX</code></td>
+<td>1 ч</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_ALARM_REARM</code></td>
+<td>10 мин</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_EPISODE_GRACE</code> / <code>GA_EPISODE_MAX</code></td>
+<td>60 с / 1 ч</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_NOTIFY_IDEMP_MARGIN</code></td>
+<td>15 мин</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_TG_EXECUTED_IDS</code></td>
+<td>64</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_CMD_MAX_AGE</code></td>
+<td>10 мин: Telegram, MQTT, причина включающей команды выхода</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_TOMBSTONE_TTL</code></td>
+<td>30 сут</td>
+<td>нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_SMOKE_REMIND</code></td>
+<td>15 мин</td>
+<td>да</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_PIR_STUCK</code></td>
+<td>2 ч</td>
+<td>да</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_CRIT_DISABLE_DEFAULT</code> / <code>GA_CRIT_DISABLE_MAX</code></td>
+<td>2 ч / 12 ч</td>
+<td>да / нет</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_ALARM_DEBOUNCE</code> / <code>GA_ALARM_COOLDOWN</code></td>
+<td>200 мс / 2 мин</td>
+<td>да</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_MOTION_DEBOUNCE</code> / <code>GA_MOTION_COOLDOWN</code> / <code>GA_PIR_WARMUP</code></td>
+<td>400 мс / 5 мин / 60 с</td>
+<td>да</td>
+<td>да</td>
+</tr>
+</tbody>
+</table></div>
+<h3>16.4. Внешние каналы и интерфейсы</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Константа</th>
+<th>Значение</th>
+<th>В <code>ga_config.h</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GA_REBOOT_NOTIFY_UNEXPECTED</code> / <code>GA_REBOOT_NOTIFY_PLANNED</code></td>
+<td>≤ 1 за 15 мин / ≤ 1 за 6 ч</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_DAILY_REPORT_TIME</code></td>
+<td>09:00 местного (мягкая)</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_TG_SEND_GAP</code></td>
+<td>350 мс</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_PUSHOVER_RETRY</code> / <code>GA_PUSHOVER_EXPIRE</code></td>
+<td>60 с / 3 ч (мягкие)</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_CONFIRM_TTL</code></td>
+<td>2 мин</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_DISABLE_STEP</code></td>
+<td>30 мин</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_BOT_EVENTS_PAGE</code></td>
+<td>10</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_WEB_REFRESH</code></td>
+<td>5–10 с (в файле 5 с)</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_WEB_LOGIN_ATTEMPTS</code> / <code>GA_WEB_LOGIN_LOCKOUT</code></td>
+<td>5 / 5 мин</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_KEYPACK_TTL</code></td>
+<td>одноразовый, 30 мин</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_PROVISION_WINDOW</code></td>
+<td>5 мин</td>
+<td>да</td>
+</tr>
+<tr>
+<td><code>GA_STATS_DAYS</code></td>
+<td>7 дней</td>
+<td>да</td>
+</tr>
+</tbody>
+</table></div>
+<h3>16.5. Выходы и MQTT-команды [2026-10-05]</h3>
+<p>Имена и значения — <code>tunables.md</code> (группа «Выходы и MQTT-команды»). В <code>ga_config.h</code> их пока нет — вносятся в историях эпика 10.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Константа</th>
+<th>Значение</th>
+<th>Мягкая</th>
+<th>Смысл</th>
+<th>В <code>ga_config.h</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GA_OUTPUT_MAX_ON_DEFAULT</code></td>
+<td>1 ч</td>
+<td>да</td>
+<td><code>max_on</code> по умолчанию</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_OUTPUT_MAX_ON_MAX</code></td>
+<td>12 ч</td>
+<td>нет</td>
+<td>предел <code>max_on</code></td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_BUZZER_MAX</code></td>
+<td>5 мин</td>
+<td>нет</td>
+<td>предел зуммера</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_OUTPUT_FEEDBACK_TIMEOUT</code></td>
+<td>500 мс</td>
+<td>нет</td>
+<td>подтверждение второй парой контактов</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_OUTPUT_LINK_LOST</code></td>
+<td>90 с без heartbeat</td>
+<td>нет</td>
+<td>безопасное состояние <code>manual</code>/<code>auto</code></td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_OUTPUT_NVS_RESERVE</code></td>
+<td>8</td>
+<td>нет</td>
+<td>резерв NVS под слоты <code>protect</code>: по одному на выход, выходов не больше</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_OUTPUT_HOLD_WRITES_DAY</code></td>
+<td>200</td>
+<td>нет</td>
+<td>записей <code>hold</code> в NVS за сутки, квота внутри <code>GA_COLLECTOR_NVS_BUDGET</code></td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_OUTPUT_BOOT_LOOP</code></td>
+<td>3</td>
+<td>нет</td>
+<td>перезагрузок подряд во включённом состоянии до безопасного и <code>fault</code></td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_OUTPUT_BOOT_STABLE</code></td>
+<td>10 мин</td>
+<td>нет</td>
+<td>непрерывная работа, сбрасывающая счётчик зацикливания</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_LOCAL_RULES_MAX</code></td>
+<td>16</td>
+<td>нет</td>
+<td>правил в таблице коллектора</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_MQTT_UP_LOST</code> / <code>GA_MQTT_UP_RESTORED</code></td>
+<td>30 с / 60 с</td>
+<td>нет</td>
+<td>гистерезис <code>mqtt_up</code></td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_MQTT_INSURE_T</code></td>
+<td>10 с</td>
+<td>нет</td>
+<td>страховка ведомого для команды MQTT</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_MQTT_SESSION_EXPIRY</code></td>
+<td>10 мин (≥ <code>GA_CMD_MAX_AGE</code>)</td>
+<td>нет</td>
+<td>срок постоянной сессии MQTT 5</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_MQTT_INSURE_MAX</code></td>
+<td>32</td>
+<td>нет</td>
+<td>выходов с <code>mqtt_control</code> (страховочных записей у ведомого)</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><code>GA_MQTT_PERSIST_WAIT</code></td>
+<td>200 мс</td>
+<td>нет</td>
+<td>ожидание записи во FRAM в обработчике MQTT до возврата (PUBACK)</td>
+<td>нет</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>GA_CONFIG_VERSION</code> = 1; расхождение у узлов — событие здоровья.</p>
+<hr>
+<p><a id="s17"></a></p>
+<h2>17. Инварианты симулятора как свойства корректности (AD-27)</h2>
+<p>Детерминированный симулятор сети без FreeRTOS (25 обязательных инвариантов): N логических узлов и коллекторов с настоящими ядрами, потери, задержки, разрывы, обрыв питания между любыми двумя записями <code>Storage</code>, OTA с откатом; воспроизводится по seed. Ядро актора — <code>step(state, msg, now, rng) → effects</code> с <code>next_deadline</code>.</p>
+<p><strong>Доставка и хранение</strong></p>
+<ol>
+<li>Подтверждённое событие не потеряно.</li>
+<li>Опоздавшее критичное доставлено.</li>
+<li>Содержимое критичного не покидает буфер коллектора без ACK.</li>
+<li>Событие, выпущенное коллектором, за ограниченное время есть у каждого живого логического узла.</li>
+<li>Адресная синхронизация с медленным пиром не останавливает приём у третьего узла.</li>
+<li>Потеря кадра без повтора не останавливает приём.</li>
+<li>Обрыв uplink не снижает приём событий датчиков.</li>
+<li>Продвижение <code>lw</code> не лишает второй логический узел возможности подтвердить ещё повторяемое критичное.</li>
+</ol>
+<p><strong>Лидерство и внешняя доставка</strong></p>
+<ol start="9">
+<li>≤ 1 внешнего дубля на единицу доставки на одну смену лидера или эпизод без аренды (внешний API не идемпотентен).</li>
+<li>Лидеры сходятся к одному.</li>
+<li>Старт нового узла не теряет обновлений Telegram.</li>
+<li>Перезагрузка не повторяет уже доставленные уведомления.</li>
+</ol>
+<p><strong>Правила и эпизоды</strong></p>
+<ol start="13">
+<li>Ключи эпизодов совпадают у всех узлов при любом порядке прихода.</li>
+<li>Срабатывание после <code>ack</code> + <code>GA_ALARM_REARM</code> даёт новую тревогу.</li>
+<li>Повторные срабатывания в эпизоде не создают новых тревог.</li>
+</ol>
+<p><strong>Время</strong></p>
+<ol start="16">
+<li>Таймауты срабатывают не позже <code>next_deadline + GA_TICK_JITTER</code>.</li>
+</ol>
+<p><strong>Выходы [2026-10-05]</strong></p>
+<ol start="17">
+<li>Итоговое состояние выхода не зависит от порядка и дублей команд.</li>
+<li><code>manual</code> не перебивает <code>protect</code>.</li>
+<li><code>max_on</code> срабатывает без сети.</li>
+<li>Локальное правило срабатывает при выключенных логических узлах.</li>
+<li>Команда MQTT, на которую подписчик отправил PUBACK брокеру, доходит при отказе MQTT-узла.</li>
+<li>Страховка ведомого, отправившего PUBACK, переживает его перезагрузку.</li>
+<li><code>on</code> с истёкшим сроком после перезагрузки коллектора выход не включает.</li>
+<li><code>GA_OUTPUT_BOOT_LOOP</code> перезагрузок во включённом состоянии дают безопасное состояние и <code>fault</code>, а стабильная работа сбрасывает счётчик.</li>
+<li>Команды с расходящимися часами узлов и проход журнала после перезагрузки не возвращают старое значение.</li>
+</ol>
+<hr>
+<p><a id="s18"></a></p>
+<h2>18. Открытые вопросы и противоречия</h2>
+<h3>18.1. Отложено или не зафиксировано</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Что</th>
+<th>Где решается</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>UDP: порт, unicast/широковещание, обнаружение пиров, предельный размер кадра по UDP</td>
+<td>история 3.2 (Deferred)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Обмен недостающими событиями: <code>GA_SYNC_PERIOD</code>, форматы сообщений сводки и запроса, <code>GA_SYNC_MAX_EVENTS</code>; формат адресного запроса списка <code>lw</code></td>
+<td>история 3.5 (Deferred)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Предел скорости <code>bulk</code> по Zigbee <code>GA_BULK_ZB_RATE</code>, длина очереди, противодавление</td>
+<td>история 3.2 (Deferred)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Строки размера в <code>wire-format.md</code> и тесты для остальных Zigbee-типов: проверка ядра heartbeat и других его сообщений (3.1), сводная запись слияния фронтов (2.4), <code>ack</code>/<code>delivered</code> (3.7) и др.; их раскладка <code>p</code></td>
+<td>истории 3.1, 2.4, 3.7 и истории, вводящие тип</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Числовые коды типов <code>t</code></td>
+<td>история 1.2 и истории, вводящие тип</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Пометка «<code>k</code> не ниже X» в событии</td>
+<td>истории 3.3, 3.10</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Формат записи синхронизации конфига</td>
+<td>история 3.10</td>
+</tr>
+<tr>
+<td>8</td>
+<td>JSON-поля MQTT по полям, перевод <code>until</code> → <code>dur_s</code>; формат паттерна зуммера</td>
+<td>эпик 10 (Deferred)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Деление <code>GA_COLLECTOR_NVS_BUDGET</code> между буфером событий, параметрами каналов и таблицей локальных правил (квота <code>hold</code> уже отдельная)</td>
+<td>истории 2.4, 10.5 (Deferred)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Поток и класс сообщения «описание каналов»</td>
+<td>история 7.1</td>
+</tr>
+<tr>
+<td>11</td>
+<td>OTA-сервер на роутере в distributed-сети (Q4)</td>
+<td>история 1.6</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Q6: esp-mqtt шлёт PUBACK после возврата синхронного обработчика (проверено по исходникам master); подтвердить на версии из стека, что ожидание записи в обработчике не ломает keepalive и приём</td>
+<td>история 10.6</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Грамматика <code>when</code> и устройство движка правил</td>
+<td>эпик 8 (Deferred)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Значения T, N, M, <code>base</code>, интервалы heartbeat уточняются на прототипе</td>
+<td>история 1.7</td>
+</tr>
+</tbody>
+</table></div>
+<h3>18.2. Что остаётся открытым</h3>
+<p>Расхождения между каркасом, <code>wire-format.md</code> и компаньонами, найденные при составлении справочника, исправлены в источниках (по коммит 560df2a включительно): хеши MQTT, <code>mqtt_key</code> в страховке, формулировки AD-29 (срок и метка команды, <code>cmd_id</code> как хеш), «<code>critical</code> у коллектора — только Zigbee»; деление бюджета NVS и перевод <code>until</code> → <code>dur_s</code> вынесены в Deferred. Противоречий между источниками не осталось. Определение ранга и правила приёма через перезагрузки тоже зафиксированы (AD-10, AD-17); Q3 (смена ключа HMAC) решён 2026-10-07 — повторный ввод каждого узла (§2.5). Открыты только пункты §18.1 и одна плановая разница:</p>
+<ol>
+<li><strong><code>ga_config.h</code> отстаёт от <code>tunables.md</code>.</strong> В файле пока нет <code>GA_PROTO_MAC_BYTES</code>, <code>GA_NET_KEY_BYTES</code> (история 1.2), констант выходов и MQTT (эпик 10), <code>GA_SYNC_*</code> (3.5) и <code>GA_BULK_ZB_RATE</code> (3.2). Они появятся в этих историях.</li>
+</ol>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  if (!window.mermaid) return;
+  var forced = document.documentElement.getAttribute('data-theme');
+  var dark = forced ? forced === 'dark' :
+    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default',
+    securityLevel: 'strict', sequence: { useMaxWidth: true, wrap: true }, flowchart: { useMaxWidth: true } });
+})();
+</script>
+</body>
+</html>
