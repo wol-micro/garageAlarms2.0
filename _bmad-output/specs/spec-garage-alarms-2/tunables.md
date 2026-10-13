@@ -78,6 +78,8 @@
 | Выходов с `mqtt_control` (страховочных записей у ведомого) | `GA_MQTT_INSURE_MAX` | 32 | нет |
 | Ожидание записи во FRAM в обработчике MQTT до возврата (PUBACK) | `GA_MQTT_PERSIST_WAIT` | 200 мс | нет |
 | Записей `hold` в NVS за сутки (квота внутри `GA_COLLECTOR_NVS_BUDGET`) | `GA_OUTPUT_HOLD_WRITES_DAY` | 200 | нет |
+| Ход крана: по умолчанию / максимум | `GA_VALVE_TRAVEL_DEFAULT` / `GA_VALVE_TRAVEL_MAX` | 30 с / 120 с | по умолчанию — да, максимум — нет |
+| Пауза крана перед сменой направления | `GA_VALVE_DEADTIME` | 500 мс | нет |
 
 ## Внешние каналы и интерфейсы
 
@@ -91,7 +93,8 @@
 | Шаг выбора срока выключения тревог | `GA_DISABLE_STEP` | 30 мин | нет |
 | Событий на странице в боте | `GA_BOT_EVENTS_PAGE` | 10 | нет |
 | Обновление сводки веба | `GA_WEB_REFRESH` | 5–10 с | нет |
-| Вход в веб: попыток / пауза | `GA_WEB_LOGIN_ATTEMPTS` / `GA_WEB_LOGIN_LOCKOUT` | 5 / 5 мин | нет |
+| Вход в веб с одного IP: попыток / первая пауза (удваивается) / предел паузы / отслеживаемых IP | `GA_WEB_LOGIN_ATTEMPTS` / `GA_WEB_LOGIN_LOCKOUT` / `GA_WEB_LOGIN_LOCKOUT_MAX` / `GA_WEB_LOGIN_IPS` | 5 / 1 мин / 1 ч / 32 | нет |
+| Внешний пульс: период / пауза при застрявшем критичном | `GA_PULSE_PERIOD` / `GA_PULSE_STALL` | 5 мин / 10 мин | нет |
 | Пакет ключей нового узла | `GA_KEYPACK_TTL` | одноразовый, 30 мин | нет |
 | Окно ввода коллектора | `GA_PROVISION_WINDOW` | 5 мин | нет |
 | Статистика владельца | `GA_STATS_DAYS` | 7 дней | нет |

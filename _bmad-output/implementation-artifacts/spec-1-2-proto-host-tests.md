@@ -48,7 +48,7 @@ context:
 | Newer version | body with extra trailing elements and unknown `t` | decodes; unknown kept opaque; forwarded `body` byte-identical | — |
 | Too big | encode exceeds `GA_ZB_FRAME_MAX_BYTES` for a Zigbee-bound type | encode returns error, buffer untouched | `PROTO_ERR_SIZE` |
 | Truncated / garbage | random or cut bytes into decode | error, no crash, no out-of-bounds read | `PROTO_ERR_FORMAT` |
-| Size proof | every Zigbee-bound message with all fields at their bounds | exact sizes of `wire-format.md` (cmd 70, state 77, intent 71, channel 65, rules part 75), each ≤ `GA_ZB_FRAME_MAX_BYTES` | test fails if not |
+| Size proof | every Zigbee-bound message with all fields at their bounds | exact sizes of `wire-format.md` (cmd 70, state 77, intent 70, channel 65, rules part 75), each ≤ `GA_ZB_FRAME_MAX_BYTES` | test fails if not |
 | Field out of bounds | e.g. `kid` > 23, `dur_s` > 43200, Zigbee type code > 23 | encode refuses | `PROTO_ERR_SIZE` |
 | Pulse without duration | `output_cmd` with `pulse`, `dur_s` = 0 | encode refuses, decode rejects | `PROTO_ERR_FORMAT` |
 
@@ -56,6 +56,8 @@ context:
 - HMAC tag `m` = 8 B: HMAC-SHA256 truncated to 64 bit (`GA_PROTO_MAC_BYTES` in `ga_config.h`).
 - Envelope and payloads are positional CBOR arrays (human, 2026-10-06, replacing the integer-keyed map after exact worst-case sizing): `body = [hdr, t, n, b, q, lwd, ts, p]`; the envelope is frozen within a major version (human, 2026-10-13), payloads may only gain trailing fields that keep their size row ≤ 80 B; layouts, bounds and the ≤ 80 B proof are in `wire-format.md`.
 - Compact `output_cmd`: `cmd_id` = first 8 B of SHA-256 over the canonical id text (`rule_id@event_id`, the intent `event_id`, or `topic ‖ 0x00 ‖ id` for MQTT with `id`); the command HLC wall time is the envelope `ts`, the payload carries only the HLC counter; order is (`ts`, HLC counter, `cmd_id`), counter overflow bumps `ts` by 1 ms; `dur_s` is a duration in seconds: deadline = `ts` + `dur_s` when the receiver knows time, else from receipt on its monotonic clock. SHA-256 goes through the same crypto port as HMAC.
+
+- Collector keys (human, 2026-10-13): a collector holds only K_c = HKDF-SHA256(network key of `kid`, info = "ga2-collector" ‖ EUI-64); frames from and to a collector are signed with K_c, frame size unchanged; `proto` provides the derivation (RFC 5869 vectors) and the signer/verifier picks the key by role of `n`. MQTT `id` and `ts` are mandatory (human, 2026-10-13): no fingerprint, `output_intent` has no key-kind bit (70 B).
 
 </frozen-after-approval>
 
@@ -75,10 +77,10 @@ context:
 - [ ] `_bmad-output/specs/spec-garage-alarms-2/tunables.md` (via its memlog) -- add a machine-readable column with one start value per constant in base units (ms, B, count); ranges and formulas resolved to one start value (formula stays in the description); `GA_FRAM_*` and `GA_TASK_*` expanded into their own tables; «задаётся в истории N.x» rows are name-only.
 - [ ] `components/ga_config/include/ga_config.h`, `tools/check_tunables.py` -- add every `tunables.md` constant still missing (outputs, MQTT, `GA_PROTO_MAC_BYTES`, `GA_NET_KEY_BYTES`, `GA_COLLECTOR_CRIT_MERGE_PERSIST`, …; rows marked «задаётся в истории 3.x» get a placeholder value with a `/* start value set in story 3.x */` comment) and a check that every `GA_*` name in `tunables.md` exists in `ga_config.h` with the same start value (name-only rows: presence); `PROTO_MIN_VERSION` and other tunable protocol bounds also live in `ga_config.h`; the check also flags `pdMS_TO_TICKS(<digits>)` and similar time/size literals outside `ga_config.h` -- owner requirement 2026-10-07: all important constants in one global file, drift caught automatically.
 - [ ] `components/proto/include/proto.h` -- public API: codes for types/classes/criticality/stream kind/levels/values/channel kinds, `proto_env_t`, frame sign/verify, envelope encode/decode, payload encode/decode for channel state, `output_cmd`, `output_state`, `output_intent`, `local_rules` part, error enum -- single protocol source (AD-5).
-- [ ] `components/proto/include/proto_crypto_port.h` -- port struct: `mac(ctx, kid, data, len, out[GA_PROTO_MAC_BYTES])` returning ok / unknown kid, and `sha256(ctx, data, len, out[32])` -- crypto behind a port (AD-27).
+- [ ] `components/proto/include/proto_crypto_port.h` -- port struct: `mac(ctx, kid, key_node, data, len, out[GA_PROTO_MAC_BYTES])` returning ok / unknown kid, where `key_node` = 0 selects the network key and a collector EUI-64 selects that collector's derived key K_c (AD-5), and `sha256(ctx, data, len, out[32])` -- crypto behind a port (AD-27).
 - [ ] `components/proto/src/{frame.c,envelope.c,payload_*.c}` -- implementation over TinyCBOR, fixed buffers.
 - [ ] `components/proto/port/proto_crypto_mbedtls.c` -- board adapter: HMAC-SHA256 truncated to `GA_PROTO_MAC_BYTES` and SHA-256 via mbedTLS, key looked up by `kid` through a callback.
-- [ ] `components/proto/test/host/` -- Linux-target project: Unity tests for every I/O matrix row, AC below, hash test vectors for `cmd_id` and fingerprint (canonical CBOR arrays), HLC counter overflow, empty and 16-rule `local_rules`, fuzz-style decode of random/truncated input (fixed seed), RFC 4231 vectors for the adapter, a size test printing worst-case byte counts.
+- [ ] `components/proto/test/host/` -- Linux-target project: Unity tests for every I/O matrix row, AC below, hash test vectors for `cmd_id` (canonical CBOR arrays), RFC 5869 vectors for the collector key derivation, HLC counter overflow, empty and 16-rule `local_rules`, fuzz-style decode of random/truncated input (fixed seed), RFC 4231 vectors for the adapter, a size test printing worst-case byte counts.
 - [ ] `tools/host_test.sh` -- one command: export IDF, build+run `proto` host tests on Linux target with coverage flags, `uvx gcovr` over `components/proto/src` with fail-under 90 line and branch, plus `gcc -fsyntax-only` of every `proto/src/*.c` with only `ga_config` and TinyCBOR include paths.
 - [ ] `CLAUDE.md`, `README.md` Build section -- add the host test command.
 
@@ -89,7 +91,7 @@ context:
 
 ## Design Notes
 
-`wire-format.md` is the contract: field order, bit packing of `hdr`, `level|value`, part counters, and per-field bounds. Implement bounds as checks in the encoders, not as comments. `local_rules` goes one rule per part `{version, part, parts, rule}`, ≤ `GA_LOCAL_RULES_MAX` parts; the collector applies a version only when all parts arrived. MQTT key helpers (`cmd_id` from `id`, fingerprint) live in `proto` so logic nodes compute them identically.
+`wire-format.md` is the contract: field order, bit packing of `hdr`, `level|value`, part counters, and per-field bounds. Implement bounds as checks in the encoders, not as comments. `local_rules` goes one rule per part `{version, part, parts, rule}`, ≤ `GA_LOCAL_RULES_MAX` parts; the collector applies a version only when all parts arrived. MQTT key helper (`cmd_id` from `[topic, id]`) and the collector key derivation live in `proto` so logic nodes compute them identically.
 
 ## Verification
 
