@@ -54,7 +54,7 @@ context:
 
 **Decisions (human, 2026-10-05):**
 - HMAC tag `m` = 8 B: HMAC-SHA256 truncated to 64 bit (`GA_PROTO_MAC_BYTES` in `ga_config.h`).
-- Envelope and payloads are positional CBOR arrays (human, 2026-10-06, replacing the integer-keyed map after exact worst-case sizing): `body = [hdr, t, n, b, q, lwd, ts, p]`; new fields only appended; layouts, bounds and the ≤ 80 B proof are in `wire-format.md`.
+- Envelope and payloads are positional CBOR arrays (human, 2026-10-06, replacing the integer-keyed map after exact worst-case sizing): `body = [hdr, t, n, b, q, lwd, ts, p]`; the envelope is frozen within a major version (human, 2026-10-13), payloads may only gain trailing fields that keep their size row ≤ 80 B; layouts, bounds and the ≤ 80 B proof are in `wire-format.md`.
 - Compact `output_cmd`: `cmd_id` = first 8 B of SHA-256 over the canonical id text (`rule_id@event_id`, the intent `event_id`, or `topic ‖ 0x00 ‖ id` for MQTT with `id`); the command HLC wall time is the envelope `ts`, the payload carries only the HLC counter; order is (`ts`, HLC counter, `cmd_id`), counter overflow bumps `ts` by 1 ms; `dur_s` is a duration in seconds: deadline = `ts` + `dur_s` when the receiver knows time, else from receipt on its monotonic clock. SHA-256 goes through the same crypto port as HMAC.
 
 </frozen-after-approval>
