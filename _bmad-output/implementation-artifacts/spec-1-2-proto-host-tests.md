@@ -30,11 +30,11 @@ context:
 - Signature is checked over the raw `body` bytes before any decoding; forwarding never re-encodes `body` (AD-5).
 - Extra trailing elements of the envelope and payloads, and unknown types, decode without error and are preserved for forwarding (AD-6); a reserved (4th) stream or class value in `hdr` is `PROTO_ERR_FORMAT`.
 - Tunable limits come from `ga_config.h` (`GA_ZB_FRAME_MAX_BYTES`, `GA_LOCAL_RULES_MAX` with a static assert ≤ 16, `GA_OUTPUT_MAX_ON_MAX` as the `dur_s` bound, `GA_PROTO_MAC_BYTES`); fixed format bounds of `wire-format.md` (kid ≤ 23, Zigbee type codes ≤ 23, counters ≤ 65535) are named `PROTO_*` constants in `proto.h`, never bare literals.
-- Three seq streams are distinguishable in the envelope (AD-7); `lw` is a field.
+- Three seq streams are distinguishable in the envelope (AD-7); `lw` travels as the field `lwd = q − lw` (0 on the unreliable stream).
 - No heap use in encode/decode; caller supplies buffers.
 
 **Never:**
-- No anti-replay windows, ACK/retry logic, key storage or kid rotation policy (Delivery 2.4, Sys 2.2) — `proto` only carries `kid`, `q`, `lw`.
+- No anti-replay windows, ACK/retry logic, key storage or kid rotation policy (Delivery 2.4, Sys 2.2) — `proto` only carries `kid`, `q`, `lwd`.
 - No payload schemas beyond channel state and the four output messages; other types get only their type codes.
 - No changes to actor components or apps beyond linking `proto`.
 
@@ -55,9 +55,13 @@ context:
 **Decisions (human, 2026-10-05):**
 - HMAC tag `m` = 8 B: HMAC-SHA256 truncated to 64 bit (`GA_PROTO_MAC_BYTES` in `ga_config.h`).
 - Envelope and payloads are positional CBOR arrays (human, 2026-10-06, replacing the integer-keyed map after exact worst-case sizing): `body = [hdr, t, n, b, q, lwd, ts, p]`; the envelope is frozen within a major version (human, 2026-10-13), payloads may only gain trailing fields that keep their size row ≤ 80 B; layouts, bounds and the ≤ 80 B proof are in `wire-format.md`.
-- Compact `output_cmd`: `cmd_id` = first 8 B of SHA-256 over the canonical id text (`rule_id@event_id`, the intent `event_id`, or `topic ‖ 0x00 ‖ id` for MQTT with `id`); the command HLC wall time is the envelope `ts`, the payload carries only the HLC counter; order is (`ts`, HLC counter, `cmd_id`), counter overflow bumps `ts` by 1 ms; `dur_s` is a duration in seconds: deadline = `ts` + `dur_s` when the receiver knows time, else from receipt on its monotonic clock. SHA-256 goes through the same crypto port as HMAC.
+- Compact `output_cmd`: `cmd_id` = first 8 B of SHA-256 over a canonical CBOR array (minimal-length integers, byte strings as is): `[rule_id, n, b, q]` of the cause (windowed rule: `[rule_id, window_start]` of the derived event), `[n, b, q]` of the intent, `[topic, id]` for MQTT (`id` mandatory); the command HLC wall time is the envelope `ts`, the payload carries only the HLC counter; order is (`ts`, HLC counter, `cmd_id`), counter overflow bumps `ts` by 1 ms; `dur_s` is a duration in seconds: deadline = `ts` + `dur_s` when the receiver knows time, else from receipt on its monotonic clock. SHA-256 goes through the same crypto port as HMAC.
 
 - Collector keys (human, 2026-10-13): a collector holds only K_c = HKDF-SHA256(network key of `kid`, no salt, info = ASCII "ga2-collector" ‖ EUI-64 (8 B BE) ‖ incarnation (uint32 BE), 32-byte output); frames from and to a collector are signed with K_c, frame size unchanged; `proto` provides the derivation (RFC 5869 vectors) and the signer/verifier picks the key by role of `n`, read before verification by a bounded parse of envelope element 2 only (fuzz-tested). MQTT `id` and `ts` are mandatory (human, 2026-10-13): no fingerprint, `output_intent` has no key-kind bit (70 B).
+
+- Consistency sweep (human-authorized, 2026-10-20): the `cmd_id` input above and the `lw`/`lwd` wording were aligned with `wire-format.md`; no change of intent.
+
+- Protocol version (human-authorized, 2026-10-20, critique round 9): the first protocol version is `v` = 1, `v` = 0 is reserved; `PROTO_MIN_VERSION` = 1, frames below it are rejected.
 
 </frozen-after-approval>
 
@@ -75,11 +79,11 @@ context:
 
 **Execution:**
 - [ ] `_bmad-output/specs/spec-garage-alarms-2/tunables.md` (via its memlog) -- add a machine-readable column with one start value per constant in base units (ms, B, count); ranges and formulas resolved to one start value (formula stays in the description); `GA_FRAM_*` and `GA_TASK_*` expanded into their own tables; «задаётся в истории N.x» rows are name-only.
-- [ ] `components/ga_config/include/ga_config.h`, `tools/check_tunables.py` -- add every `tunables.md` constant still missing (outputs, MQTT, `GA_PROTO_MAC_BYTES`, `GA_NET_KEY_BYTES`, `GA_COLLECTOR_CRIT_MERGE_PERSIST`, …; rows marked «задаётся в истории 3.x» get a placeholder value with a `/* start value set in story 3.x */` comment) and a check that every `GA_*` name in `tunables.md` exists in `ga_config.h` with the same start value (name-only rows: presence); `PROTO_MIN_VERSION` and other tunable protocol bounds also live in `ga_config.h`; the check also flags `pdMS_TO_TICKS(<digits>)` and similar time/size literals outside `ga_config.h` -- owner requirement 2026-10-07: all important constants in one global file, drift caught automatically.
+- [ ] `components/ga_config/include/ga_config.h`, `tools/check_tunables.py` -- add every `tunables.md` constant still missing (outputs, MQTT, `GA_PROTO_MAC_BYTES`, `GA_NET_KEY_BYTES`, `GA_COLLECTOR_CRIT_MERGE_PERSIST`, …; rows marked «задаётся в истории 3.x» get a placeholder value with a `/* start value set in story 3.x */` comment) and a check that every `GA_*` name in `tunables.md` exists in `ga_config.h` with the same start value (name-only rows: presence); `PROTO_MIN_VERSION` and other tunable protocol bounds also live in `ga_config.h`, and the check covers `PROTO_MIN_VERSION` (a `tunables.md` row) the same way as `GA_*` names; the check also flags `pdMS_TO_TICKS(<digits>)` and similar time/size literals outside `ga_config.h` -- owner requirement 2026-10-07: all important constants in one global file, drift caught automatically.
 - [ ] `components/proto/include/proto.h` -- public API: codes for types/classes/criticality/stream kind/levels/values/channel kinds, `proto_env_t`, frame sign/verify, envelope encode/decode, payload encode/decode for channel state, `output_cmd`, `output_state`, `output_intent`, `local_rules` part, error enum -- single protocol source (AD-5).
-- [ ] `components/proto/include/proto_crypto_port.h` -- port struct: `mac(ctx, kid, key_node, data, len, out[GA_PROTO_MAC_BYTES])` returning ok / unknown kid, where `key_node` = 0 selects the network key and a collector EUI-64 selects that collector's derived key K_c (AD-5), and `sha256(ctx, data, len, out[32])` -- crypto behind a port (AD-27).
+- [ ] `components/proto/include/proto_crypto_port.h` -- port struct: `mac(ctx, kid, key_node, data, len, out[GA_PROTO_MAC_BYTES])` returning ok / unknown kid, where `key_node` = 0 selects the network key and a collector EUI-64 selects that collector's derived key K_c (AD-5), resolved by the key callback from (`kid`, collector EUI-64, incarnation) — the incarnation is supplied by the shell from `node/<eui>` (Membership), pure `proto` never reads it, and `sha256(ctx, data, len, out[32])` -- crypto behind a port (AD-27).
 - [ ] `components/proto/src/{frame.c,envelope.c,payload_*.c}` -- implementation over TinyCBOR, fixed buffers.
-- [ ] `components/proto/port/proto_crypto_mbedtls.c` -- board adapter: HMAC-SHA256 truncated to `GA_PROTO_MAC_BYTES` and SHA-256 via mbedTLS, key looked up by `kid` through a callback.
+- [ ] `components/proto/port/proto_crypto_mbedtls.c` -- board adapter: HMAC-SHA256 truncated to `GA_PROTO_MAC_BYTES` and SHA-256 via mbedTLS, key looked up through a callback by (`kid`, collector EUI-64 or 0, incarnation), the incarnation supplied by the shell from `node/<eui>`.
 - [ ] `components/proto/test/host/` -- Linux-target project: Unity tests for every I/O matrix row, AC below, hash test vectors for `cmd_id` (canonical CBOR arrays), RFC 5869 vectors for the collector key derivation, HLC counter overflow, empty and 16-rule `local_rules`, fuzz-style decode of random/truncated input (fixed seed), RFC 4231 vectors for the adapter, a size test printing worst-case byte counts.
 - [ ] `tools/host_test.sh` -- one command: export IDF, build+run `proto` host tests on Linux target with coverage flags, `uvx gcovr` over `components/proto/src` with fail-under 90 line and branch, plus `gcc -fsyntax-only` of every `proto/src/*.c` with only `ga_config` and TinyCBOR include paths.
 - [ ] `CLAUDE.md`, `README.md` Build section -- add the host test command.
@@ -97,5 +101,5 @@ context:
 
 **Commands:**
 - `tools/host_test.sh` -- expected: exit 0, coverage lines/branches ≥ 90 % for `components/proto/src`
-- `python3 tools/check_tunables.py` -- expected: exit 0, every `tunables.md` constant present in `ga_config.h` with the same value
+- `python3 tools/check_tunables.py` -- expected: exit 0, every `tunables.md` constant, including `PROTO_MIN_VERSION`, present in `ga_config.h` with the same value
 - `. ~/esp/v6.0.3/esp-idf/export.sh && idf.py -C apps/logic-s3 build && idf.py -C apps/collector-h2 build` -- expected: exit 0, no warnings from `proto`
