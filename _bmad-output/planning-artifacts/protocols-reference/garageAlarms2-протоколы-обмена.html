@@ -1110,9 +1110,9 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   A-&gt;&gt;PO: priority 2, tags = event_id
   PO--&gt;&gt;A: receipt
   A-&gt;&gt;B: delivered по каждой единице, с message_id
-  Note over B: B — первый ведомый со здоровым uplink, ранг 0: ждёт GA_CRIT_FOLLOWER_T, 45 с. Второй ведомый, ранг 1, ждал бы 90 с
+  Note over B: B — первый ведомый со здоровым uplink, ранг страховки 0: ждёт GA_CRIT_FOLLOWER_T, 45 с. Второй ведомый, ранг страховки 1, ждал бы 90 с
   Note over B: delivered увиден раньше срока, страховка не нужна
-  alt LEADER молчит дольше GA_CRIT_FOLLOWER_T x 1 + ранг
+  alt LEADER молчит дольше GA_CRIT_FOLLOWER_T x 1 + ранг страховки
     B-&gt;&gt;TG: недоставленные единицы
     B-&gt;&gt;PO: недоставленные единицы, те же tags
     B-&gt;&gt;A: delivered
@@ -1677,7 +1677,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <p>Раскладка каждого сообщения и тест размера — <strong>не зафиксировано</strong> (история 3.1, строки в <code>wire-format.md</code>). Периодичность объявления <code>kid</code> коллектором — <strong>не зафиксировано</strong> (история 3.1).</p>
 <p><strong>Период.</strong> Базовый: <code>GA_HB_LOGIC</code> = 10 с, <code>GA_HB_COLLECTOR</code> = 30 с. По Zigbee период растёт с числом узлов (записи <code>node/&lt;eui&gt;</code>):
 <code>max(GA_HB_*, (N_логических + N_коллекторов × H_к) / (GA_ZB_BCAST_RATE × GA_ZB_BCAST_HB_SHARE), N_логических × N_коллекторов / (GA_ZB_UCAST_RATE × GA_ZB_BCAST_HB_SHARE))</code>,
-где <code>H_к</code> — число широковещательных сообщений heartbeat коллектора за период (ядро; части <code>lw</code> и здоровье — только при изменении), второе слагаемое — адресный heartbeat логических узлов коллекторам, <code>GA_ZB_BCAST_RATE</code> = 1/с, <code>GA_ZB_BCAST_HB_SHARE</code> = 50 %, <code>GA_ZB_UCAST_RATE</code> = 10/с (уточняются в истории 1.7). Логический узел объявляет период в ядре, коллектор берёт его оттуда. На стенде 2 + 2 — базовые периоды; при 16 + 32 и <code>H_к</code> = 1 — около 102 с и <code>stale</code> около 5 мин (AD-12).</p>
+где <code>H_к</code> — число широковещательных сообщений heartbeat коллектора за период (ядро; части <code>lw</code> и здоровье — только при изменении), второе слагаемое — адресный heartbeat логических узлов коллекторам, <code>GA_ZB_BCAST_RATE</code> = 1/с, <code>GA_ZB_BCAST_HB_SHARE</code> = 50 %, <code>GA_ZB_UCAST_RATE</code> = 10/с (уточняются в истории 1.7). Логический узел объявляет период в ядре, коллектор берёт его оттуда. Масштабируемые слагаемые дают общую нижнюю границу P_N; каждый тип узла берёт max(свой базовый <code>GA_HB_*</code>, P_N): тип с базовым периодом длиннее P_N (коллекторы, 30 с) шлёт реже, чем предполагает формула, поэтому оценка нагрузки консервативна — может завысить нагрузку на эфир, но не занизить (AD-12). На стенде 2 + 2 — базовые периоды; при 16 + 32 и <code>H_к</code> = 1 — около 102 с и <code>stale</code> около 5 мин (AD-12).</p>
 <p><strong>Что делают по heartbeat.</strong></p>
 <div class="tw"><table>
 <thead>
@@ -1748,7 +1748,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 </tbody></table>
 </div>
-<p>Статусы: <code>LEADER</code> / <code>FOLLOWER</code> / <code>YIELDED</code> / <code>ISOLATED</code> (нет пиров и uplink — только копит). Узел без пиров, но с uplink — <code>LEADER</code>, не раньше <code>GA_JOIN_GRACE</code> (30 с) после старта; до этого или до первого heartbeat пира — <code>FOLLOWER</code> (AD-9). Ранг — позиция среди живых логических узлов в порядке выбора лидера, с 0 (AD-10).</p>
+<p>Статусы: <code>LEADER</code> / <code>FOLLOWER</code> / <code>YIELDED</code> / <code>ISOLATED</code> (нет пиров и uplink — только копит). Узел без пиров, но с uplink — <code>LEADER</code>, не раньше <code>GA_JOIN_GRACE</code> (30 с) после старта; до этого или до первого heartbeat пира — <code>FOLLOWER</code> (AD-9). Ранг — позиция среди живых логических узлов, включая лидера, в порядке выбора лидера, с 0 (AD-10); он задаёт паузу <code>YIELDED</code> и не совпадает с «рангом страховки» AD-11 — тот без лидера и только по узлам со здоровым uplink (раздел <a href="#s5">5</a>).</p>
 <p><strong>Время.</strong> Логические узлы — NTP; без NTP источник времени — <code>LEADER</code> (AD-20); коллектор — из <code>ts</code> ядра адресного heartbeat (AD-19). Как именно ведомый логический узел берёт время у <code>LEADER</code> без NTP — <strong>не зафиксировано</strong>.</p>
 <figure class="diagram"><pre class="mermaid">sequenceDiagram
   autonumber
@@ -1771,7 +1771,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   Note over B: дальше аренда Telegram, раздел 4</pre></figure>
 <p><a id="s3-5"></a></p>
 <h3>3.5. Ввод узла и смена ключа сети</h3>
-<p><strong>Ввод</strong> (AD-17, AD-23, <code>external-channels.md</code>). Пути: USB — любой узел; без USB логический узел (S3) — через свою WiFi-точку (SoftAP), коллектор (H2) — по BLE. Окно ввода без USB (SoftAP у S3, BLE у H2) ограничено <code>GA_PROVISION_WINDOW</code> = 5 мин и открыто только пока Zigbee-стек не запущен: невведённый узел открывает его при старте или по нажатию кнопки ввода; после ввода окно выключается. Повторный ввод работающего узла по SoftAP или BLE (смена секрета или ключа) — перезагрузка в режим ввода: кнопка ввода, удерживаемая при включении (AD-17, история 6.4). Защита сессии — Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки). Все способы пишут одну запись provisioning в один namespace. Размер сети ограничен <code>GA_LOGIC_NODES_MAX</code> (16) / <code>GA_COLLECTORS_MAX</code> (32) / <code>GA_OUTPUTS_MAX</code> (64); ввод сверх предела отказывает с объяснением в вебе.</p>
+<p><strong>Ввод</strong> (AD-17, AD-23, <code>external-channels.md</code>). Пути: USB — любой узел; без USB логический узел (S3) — через свою WiFi-точку (SoftAP), коллектор (H2) — по BLE. Окно ввода без USB (SoftAP у S3, BLE у H2) ограничено <code>GA_PROVISION_WINDOW</code> = 5 мин и открыто только пока Zigbee-стек не запущен: невведённый узел открывает его при старте или по нажатию кнопки ввода; после ввода окно выключается. Повторный ввод работающего узла по SoftAP или BLE (смена секрета или ключа) — только включение с удерживаемой кнопкой ввода; нажатие кнопки на работающем узле для ввода ничего не делает, перезагрузки по нажатию нет — случайное нажатие не выбивает узел из сети (AD-17, история 6.4). Тексты веба: «Окно ввода закрыто. Нажмите кнопку ввода на узле.» (новый узел) / «Окно ввода закрыто. Выключите узел и включите, удерживая кнопку ввода.» (работающий узел) (<code>EXPERIENCE.md</code>). Защита сессии — Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки). Все способы пишут одну запись provisioning в один namespace. Размер сети ограничен <code>GA_LOGIC_NODES_MAX</code> (16) / <code>GA_COLLECTORS_MAX</code> (32) / <code>GA_OUTPUTS_MAX</code> (64); ввод сверх предела отказывает с объяснением в вебе.</p>
 <div class="tw"><table>
 <thead>
 <tr>
@@ -1843,7 +1843,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   actor O as Владелец с телефоном
   participant W as Веб логического узла
   participant C as Коллектор в окне ввода
-  O-&gt;&gt;C: старт невведённого узла или кнопка ввода, окно GA_PROVISION_WINDOW
+  O-&gt;&gt;C: старт невведённого узла или нажатие кнопки ввода на нём, окно GA_PROVISION_WINDOW
   O-&gt;&gt;W: Узлы, Добавить коллектор, после входа
   W-&gt;&gt;C: поиск по Web Bluetooth
   O-&gt;&gt;W: сверка EUI, код с наклейки
@@ -1855,7 +1855,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   C-&gt;&gt;C: перезагрузка, запуск Zigbee
   C-&gt;&gt;W: heartbeat и описание каналов, подпись K_c
   W-&gt;&gt;O: каналы в Новых каналах</pre></figure>
-<p><strong>Смена ключа сети</strong> (AD-5, AD-23). Ключ меняется только повторным вводом каждого узла; по сети не передаётся никогда. Ключ Zigbee-сети не меняется (его смена — повторный ввод всех узлов с перерывом, вне MVP). Повторный ввод (по SoftAP или BLE — после перезагрузки с удержанием кнопки ввода) сохраняет воплощение, <code>boot</code>, буфер событий, слоты <code>protect</code>, счётчик зацикливания и журнал FRAM; после ввода автор переподписывает свой буфер текущим ключом.</p>
+<p><strong>Смена ключа сети</strong> (AD-5, AD-23). Ключ меняется только повторным вводом каждого узла; по сети не передаётся никогда. Ключ Zigbee-сети не меняется (его смена — повторный ввод всех узлов с перерывом, вне MVP). Повторный ввод (по SoftAP или BLE — после включения с удерживаемой кнопкой ввода) сохраняет воплощение, <code>boot</code>, буфер событий, слоты <code>protect</code>, счётчик зацикливания и журнал FRAM; после ввода автор переподписывает свой буфер текущим ключом.</p>
 <figure class="diagram"><pre class="mermaid">sequenceDiagram
   autonumber
   actor O as Владелец
@@ -2179,7 +2179,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </thead>
 <tbody><tr>
 <td>Кто отправляет</td>
-<td><code>LEADER</code>; страховка — <code>FOLLOWER</code> и <code>YIELDED</code> после <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг); ранг — позиция среди живых логических узлов со здоровым uplink в порядке выбора лидера без текущего <code>LEADER</code>, с 0: первый ждёт 45 с, второй 90 с; без лидера (все <code>YIELDED</code>) — позиция среди всех живых со здоровым uplink в том же порядке (ранг AD-10 для <code>GA_YIELD_BASE</code> uplink не учитывает)</td>
+<td><code>LEADER</code>; страховка — <code>FOLLOWER</code> и <code>YIELDED</code> после <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг страховки); ранг страховки — позиция среди живых логических узлов со здоровым uplink в порядке выбора лидера без текущего <code>LEADER</code>, с 0: первый ждёт 45 с, второй 90 с; без лидера (все <code>YIELDED</code>) — позиция среди всех живых со здоровым uplink в том же порядке (ранг AD-10 для <code>GA_YIELD_BASE</code> uplink не учитывает и включает лидера); ранг AD-10 (пауза <code>YIELDED</code>) с ним не путать</td>
 <td>AD-10, AD-11</td>
 </tr>
 <tr>
@@ -2304,7 +2304,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 <tr>
 <td>Сессия подписчика команд</td>
-<td><code>clean_start = false</code>, session expiry <code>GA_MQTT_SESSION_EXPIRY</code> = 10 мин (≥ <code>GA_CMD_MAX_AGE</code>); брокер держит команду, пока подписчик переподключается</td>
+<td><code>clean_start = false</code>, session expiry <code>GA_MQTT_SESSION_EXPIRY</code> = 1 ч (≥ <code>GA_CMD_MAX_AGE</code>); срок отсчитывается от разрыва, поэтому берётся с запасом над <code>GA_CMD_MAX_AGE</code>: команда, пришедшая в конце долгого разрыва, ещё годна; брокер держит команду, пока подписчик переподключается</td>
 </tr>
 <tr>
 <td>Урезанный срок сессии или брокер без MQTT 5</td>
@@ -2867,9 +2867,9 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 <tr>
 <td><code>GA_CRIT_FOLLOWER_T</code></td>
-<td>45 с; ждут T × (1 + ранг): 45 с, 90 с, …</td>
+<td>45 с; ждут T × (1 + ранг страховки): 45 с, 90 с, …</td>
 <td>Л7, Л8</td>
-<td>страховка критичного; ранг — среди живых со здоровым uplink без <code>LEADER</code></td>
+<td>страховка критичного; ранг страховки — среди живых со здоровым uplink без <code>LEADER</code></td>
 </tr>
 <tr>
 <td><code>GA_LEASE_RENEW</code> / <code>GA_LEASE_TTL</code></td>
@@ -2881,7 +2881,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td><code>GA_YIELD_BASE</code></td>
 <td>30 с × (1 + ранг)</td>
 <td>Л7</td>
-<td><code>YIELDED</code> без аренды</td>
+<td><code>YIELDED</code> без аренды; ранг AD-10 — включая лидера</td>
 </tr>
 <tr>
 <td><code>GA_TG_EXECUTED_IDS</code></td>
@@ -2993,7 +2993,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 <tr>
 <td><code>GA_MQTT_SESSION_EXPIRY</code></td>
-<td>10 мин</td>
+<td>1 ч (≥ <code>GA_CMD_MAX_AGE</code>, отсчёт от разрыва)</td>
 <td>Л9</td>
 <td>постоянная сессия подписчика</td>
 </tr>
