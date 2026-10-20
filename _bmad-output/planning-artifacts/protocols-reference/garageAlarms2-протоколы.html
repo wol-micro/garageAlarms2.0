@@ -56,7 +56,7 @@ strong { color:inherit; }
 <body>
 <main>
 <h1>garageAlarms 2.0 — протоколы распределённой системы</h1>
-<p>Справочник по межузловым и внешним протоколам сети тревог garageAlarms 2.0. Составлен 2026-10-05, обновлён 2026-10-13 по документам планирования с правками пятого ревью и решениями владельца от 2026-10-13 (A–E: ключи коллекторов и защита узлов, обязательные <code>id</code> и <code>ts</code> в MQTT, ИБП и внешний пульс, кран <code>valve</code>, блокировка входа по IP), их ревью и правками шестого ревью (метка команды MQTT из JSON <code>ts</code>, довод крана до закрытия, воплощение в ключе коллектора); обновлён 2026-10-20 по сверке источников (<code>cmd_id</code> оконного правила, OTA логического узла по HTTPS, пути и окно ввода, ключи коллектора, <code>result</code> MQTT, страховка критичного, <code>/mode</code>, новые константы). Только по документам планирования; ничего сверх них не добавлено. Где решение ещё не принято, стоит пометка <strong>«не зафиксировано, решается в истории X»</strong>.</p>
+<p>Справочник по межузловым и внешним протоколам сети тревог garageAlarms 2.0. Составлен 2026-10-05, обновлён 2026-10-13 по документам планирования с правками пятого ревью и решениями владельца от 2026-10-13 (A–E: ключи коллекторов и защита узлов, обязательные <code>id</code> и <code>ts</code> в MQTT, ИБП и внешний пульс, кран <code>valve</code>, блокировка входа по IP), их ревью и правками шестого ревью (метка команды MQTT из JSON <code>ts</code>, довод крана до закрытия, воплощение в ключе коллектора); обновлён 2026-10-20 по сверке источников (<code>cmd_id</code> оконного правила, OTA логического узла по HTTPS, пути и окно ввода, ключи коллектора, <code>result</code> MQTT, страховка критичного, <code>/mode</code>, новые константы), затем по критике 9-го раунда и её ревью (ранг страховки без лидера, широковещательный heartbeat коллектора, SRP6a, OTA коллекторов только с лидера, страховочная запись MQTT по наибольшему <code>ts</code>, <code>v</code> = 1, лимиты Telegram). Только по документам планирования; ничего сверх них не добавлено. Где решение ещё не принято, стоит пометка <strong>«не зафиксировано, решается в истории X»</strong>.</p>
 <p><strong>Источники и их сила</strong></p>
 <div class="tw"><table>
 <thead>
@@ -468,7 +468,7 @@ strong { color:inherit; }
 </table></div>
 <p><strong>Кадр = 13 + 37 + <code>p</code> ≤ <code>GA_ZB_FRAME_MAX_BYTES</code> (80) ⇔ <code>p</code> ≤ 30 Б.</strong></p>
 <ul>
-<li><code>v</code> 0…7 — мажорная версия; кадры с версией ниже <code>PROTO_MIN_VERSION</code> (<strong>[2026-10-20]</strong> = 1, <code>tunables.md</code>) отвергаются. Четвёртое значение потока или класса в <code>hdr</code> — ошибка формата, кадр отвергается.</li>
+<li><code>v</code> 0…7 — мажорная версия; кадры с версией ниже <code>PROTO_MIN_VERSION</code> (<strong>[2026-10-20]</strong> = 1, <code>tunables.md</code>) отвергаются; <strong>[2026-10-20]</strong> первая версия протокола — <code>v</code> = 1, <code>v</code> = 0 зарезервирован (AD-6, <code>wire-format.md</code>). Четвёртое значение потока или класса в <code>hdr</code> — ошибка формата, кадр отвергается.</li>
 <li>Коды типов 0–23 зарезервированы за типами, идущими по Zigbee. Типы, которые по Zigbee не ходят, могут иметь коды &gt; 23 и большие нагрузки (UDP, история 3.2).</li>
 <li>Незнакомые типы пропускаются (AD-6). Кодировщик отказывает (<code>PROTO_ERR_SIZE</code>) при выходе за границу поля или кадра.</li>
 </ul>
@@ -579,7 +579,7 @@ strong { color:inherit; }
 </ul>
 <h3>2.6. Совместимость N / N−1 (AD-6)</h3>
 <ul>
-<li>Версия протокола N понимает N−1; кадры с версией ниже <code>PROTO_MIN_VERSION</code> отвергаются; в пределах поддерживаемых версий алгоритм и длина подписи не ослабевают. Поля не удаляются и не меняют смысл внутри мажорной версии. <strong>[2026-10-13]</strong> Конверт внутри мажорной версии заморожен; новые данные — новыми типами или хвостом нагрузки в пределах доказательства размера (§2.3).</li>
+<li>Версия протокола N понимает N−1; кадры с версией ниже <code>PROTO_MIN_VERSION</code> отвергаются (<strong>[2026-10-20]</strong> первая версия — <code>v</code> = 1, <code>v</code> = 0 зарезервирован, <code>PROTO_MIN_VERSION</code> = 1); в пределах поддерживаемых версий алгоритм и длина подписи не ослабевают. Поля не удаляются и не меняют смысл внутри мажорной версии. <strong>[2026-10-13]</strong> Конверт внутри мажорной версии заморожен; новые данные — новыми типами или хвостом нагрузки в пределах доказательства размера (§2.3).</li>
 <li>Событие незнакомого типа подтверждается, хранится и реплицируется как непрозрачный <code>body</code>. Маршрутизация и критичность берутся из <code>c</code> и <code>k</code> (в <code>hdr</code>), а не из типа.</li>
 <li>Экземпляр правила с незнакомым шаблоном не исполняется и помечается в вебе.</li>
 <li>Команда выхода не отправляется коллектору, в описании каналов которого нет этого выхода (AD-29).</li>
@@ -646,7 +646,7 @@ strong { color:inherit; }
 <td>AD-7, AD-21</td>
 </tr>
 <tr>
-<td>heartbeat</td>
+<td>heartbeat (<strong>[2026-10-20]</strong> коллектора — Zigbee-широковещание с его K_c)</td>
 <td>ненадёжный</td>
 <td><code>critical</code></td>
 <td>AD-7, AD-12, AD-19</td>
@@ -899,8 +899,9 @@ strong { color:inherit; }
 <ul>
 <li>Широковещание Zigbee — ограниченный ресурс (таблица широковещательных транзакций стека): суммарная частота широковещательных кадров в сети при максимуме узлов ≤ <code>GA_ZB_BCAST_RATE</code> (1 в секунду; доля heartbeat <code>GA_ZB_BCAST_HB_SHARE</code> = 50 %; оба уточняются в истории 1.7 по таблице транзакций стека).</li>
 <li>Логические узлы шлют по Zigbee только ядро heartbeat (время — <code>ts</code> его конверта) и объявление <code>kid</code>: <strong>[2026-10-13]</strong> широковещательно — другим логическим узлам (ключ сети; объявление — при смене и раз в <code>GA_KID_ANNOUNCE</code>, 10 мин), адресно — каждому коллектору (его ключ K_c; объявление — только при смене и по запросу коллектора). Остальные части heartbeat — по UDP; по Zigbee — только при недоступности UDP и с ограничением <code>bulk</code>.</li>
-<li>Период heartbeat по Zigbee масштабируется по фактическому числу узлов (записи <code>node/&lt;eui&gt;</code>): <code>max(GA_HB_*, N_узлов / (GA_ZB_BCAST_RATE × GA_ZB_BCAST_HB_SHARE), N_логических × N_коллекторов / (GA_ZB_UCAST_RATE × GA_ZB_BCAST_HB_SHARE))</code> — <strong>[2026-10-13]</strong> второе ограничение учитывает адресный heartbeat коллекторам (<code>GA_ZB_UCAST_RATE</code> = 10 одноадресных кадров в секунду, уточняется в истории 1.7). Логический узел объявляет период в ядре, коллектор берёт его оттуда.</li>
-<li><code>stale</code> и <code>GA_OUTPUT_LINK_LOST_HB</code> считаются в периодах heartbeat, не в секундах: на стенде 2 + 2 — базовые периоды, при 16 + 32 узлах — около 102 с по адресному ограничению и <code>stale</code> около 5 мин.</li>
+<li><strong>[2026-10-20]</strong> Коллектор шлёт свой heartbeat по Zigbee широковещательно, подписав своим K_c; каждый логический узел выводит K_c и проверяет кадр; адресного heartbeat коллектор → логический узел нет (AD-12, AD-19).</li>
+<li>Период heartbeat по Zigbee масштабируется по фактическому числу узлов (записи <code>node/&lt;eui&gt;</code>): <code>max(GA_HB_*, (N_логических + N_коллекторов × H_к) / (GA_ZB_BCAST_RATE × GA_ZB_BCAST_HB_SHARE), N_логических × N_коллекторов / (GA_ZB_UCAST_RATE × GA_ZB_BCAST_HB_SHARE))</code> — <strong>[2026-10-13]</strong> второе ограничение учитывает адресный heartbeat коллекторам (<code>GA_ZB_UCAST_RATE</code> = 10 одноадресных кадров в секунду, уточняется в истории 1.7). <strong>[2026-10-20]</strong> В широковещательном слагаемом вместо <code>N_узлов</code> берётся <code>N_логических + N_коллекторов × H_к</code>, где <code>H_к</code> — число широковещательных сообщений heartbeat коллектора за период (ядро; части <code>lw</code> и здоровье — только при изменении). Логический узел объявляет период в ядре, коллектор берёт его оттуда.</li>
+<li><code>stale</code> и <code>GA_OUTPUT_LINK_LOST_HB</code> считаются в периодах heartbeat, не в секундах: на стенде 2 + 2 — базовые периоды, при 16 + 32 узлах и <strong>[2026-10-20]</strong> <code>H_к</code> = 1 — около 102 с по адресному ограничению и <code>stale</code> около 5 мин.</li>
 <li>Расчёт с адресными кадрами — таблица бюджетов истории 1.7 (эфир, FRAM, NVS коллектора при максимуме узлов), проверка — история 3.1.</li>
 </ul>
 <hr>
@@ -940,9 +941,9 @@ strong { color:inherit; }
   B-&gt;&gt;B: Rules: тот же эпизод, та же тревога
   A-&gt;&gt;TG: sendMessage (LEADER)
   TG--&gt;&gt;A: message_id
-  A-&gt;&gt;PO: priority = 2, tag = event_id
+  A-&gt;&gt;PO: priority = 2, tags = event_id
   A-&gt;&gt;B: delivered (event_id, recipient, channel, message_id)
-  Note over B: delivered увиден до GA_CRIT_FOLLOWER_T, страховка не нужна
+  Note over B: B — первый ведомый со здоровым uplink, ранг 0, ждёт GA_CRIT_FOLLOWER_T, 45 с. delivered увиден раньше, страховка не нужна
   PO--&gt;&gt;A: receipt: подтверждено человеком
   A-&gt;&gt;B: ack (event_id, by)
   Note over A,B: ack гасит повторы, напоминания и Pushover во всех каналах
@@ -1337,7 +1338,7 @@ strong { color:inherit; }
 </tr>
 </tbody>
 </table></div>
-<p><strong>[2026-10-13]</strong> У логического узла по Zigbee идут только ядро (время коллектор берёт из <code>ts</code> его конверта) и объявление <code>kid</code>, коллекторам — адресно, подписанные их K_c (§4.4); <code>W</code>, части <code>lw</code> и здоровье — по UDP. Коллектору <code>lw</code> прошлых загрузок — только адресным ответом на его запрос (AD-17). Коллектор узнаёт список логических узлов и время только из адресного heartbeat, подписанного его ключом; широковещательный heartbeat логических узлов он не использует.</p>
+<p><strong>[2026-10-13]</strong> У логического узла по Zigbee идут только ядро (время коллектор берёт из <code>ts</code> его конверта) и объявление <code>kid</code>, коллекторам — адресно, подписанные их K_c (§4.4); <code>W</code>, части <code>lw</code> и здоровье — по UDP. Коллектору <code>lw</code> прошлых загрузок — только адресным ответом на его запрос (AD-17). <strong>[2026-10-20]</strong> Свой heartbeat коллектор шлёт по Zigbee широковещательно с K_c, его проверяет каждый логический узел; адресного heartbeat коллектора нет. Коллектор узнаёт список логических узлов и время только из адресного heartbeat, подписанного его ключом; широковещательный heartbeat логических узлов он не использует.</p>
 <p>Раскладка каждого сообщения и тест размера — <strong>история 3.1</strong> (строка в <code>wire-format.md</code>).</p>
 <h3>7.2. Интервалы и обнаружение пропажи</h3>
 <div class="tw"><table>
@@ -1361,8 +1362,8 @@ strong { color:inherit; }
 </tr>
 <tr>
 <td><strong>[2026-10-13]</strong> Период по Zigbee</td>
-<td><code>max(GA_HB_*, N_узлов / (GA_ZB_BCAST_RATE × GA_ZB_BCAST_HB_SHARE), N_логических × N_коллекторов / (GA_ZB_UCAST_RATE × GA_ZB_BCAST_HB_SHARE))</code></td>
-<td>растёт с числом узлов, объявляется в ядре (§4.4)</td>
+<td><code>max(GA_HB_*, (N_логических + N_коллекторов × H_к) / (GA_ZB_BCAST_RATE × GA_ZB_BCAST_HB_SHARE), N_логических × N_коллекторов / (GA_ZB_UCAST_RATE × GA_ZB_BCAST_HB_SHARE))</code></td>
+<td>растёт с числом узлов, объявляется в ядре; <strong>[2026-10-20]</strong> <code>H_к</code> — широковещательных сообщений heartbeat коллектора за период (§4.4)</td>
 </tr>
 <tr>
 <td><code>stale</code> узла или канала</td>
@@ -1430,7 +1431,7 @@ strong { color:inherit; }
 </tr>
 <tr>
 <td><code>FOLLOWER</code></td>
-<td>копия очереди; страхует критичное через <code>GA_CRIT_FOLLOWER_T</code> (AD-11)</td>
+<td>копия очереди; страхует критичное через <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг) (<strong>[2026-10-20]</strong> ранг — без текущего <code>LEADER</code>, AD-11)</td>
 </tr>
 <tr>
 <td><code>YIELDED</code></td>
@@ -1456,7 +1457,7 @@ strong { color:inherit; }
 </li>
 <li><strong>Ранг</strong> — позиция узла среди живых логических узлов в порядке выбора лидера (<code>leader_priority</code>, затем EUI-64), с 0.</li>
 <li>В <code>YIELDED</code> нет <code>getUpdates</code> и некритичной отправки. Некритичное <code>LEADER</code> отправляет, только пока до конца его аренды остаётся не меньше <code>GA_LEASE_RENEW</code>.</li>
-<li>Критичное отправляется и без аренды (<code>YIELDED</code>, страховка AD-11). Внешний API не идемпотентен: падение между отправкой и <code>delivered</code> даёт внешний дубль — это допущено (не потерять &gt; не флудить); Pushover гасит копии по <code>tag</code>.</li>
+<li>Критичное отправляется и без аренды (<code>YIELDED</code>, страховка AD-11). Внешний API не идемпотентен: падение между отправкой и <code>delivered</code> даёт внешний дубль — это допущено (не потерять &gt; не флудить); Pushover гасит копии по <strong>[2026-10-20]</strong> <code>tags</code> (<code>cancel_by_tag</code>).</li>
 <li>Узел, ставший <code>LEADER</code>, принимает отправку всех недоставленных элементов.</li>
 </ul>
 <p><strong>Команды Telegram без повторного исполнения:</strong></p>
@@ -1464,7 +1465,7 @@ strong { color:inherit; }
 <li><code>offset</code> реплицируется как максимум; множество выполненных <code>update_id</code> — как объединение с обрезкой до старших <code>GA_TG_EXECUTED_IDS</code> (64).</li>
 <li>Оба сохраняются и реплицируются <strong>до</strong> исполнения команды. Исполнение — после подтверждения <code>offset</code> хотя бы одним живым пиром; без пиров — после записи в FRAM.</li>
 <li>Не исполняется команда: с известным <code>update_id</code>; с <code>update_id</code> ≤ минимального в множестве; с <code>date</code> старше <code>GA_CMD_MAX_AGE</code> (10 мин).</li>
-<li>Узел без состояния <code>Notify</code> от пиров начинает с <code>offset = −1</code> и полученное последнее обновление не исполняет — только если за <code>GA_JOIN_GRACE</code> не услышан ни один пир, а аренда просрочена или отсутствует.</li>
+<li>Узел без состояния <code>Notify</code> от пиров начинает опрос с <code>offset = −1</code> (полученное последнее обновление не исполняет), только если за <code>GA_JOIN_GRACE</code> не услышан ни один пир и аренда просрочена или отсутствует; <strong>[2026-10-20]</strong> иначе он не опрашивает, пока не получит <code>offset</code> от пира или аренда не истечёт.</li>
 </ul>
 <figure class="diagram"><pre class="mermaid">sequenceDiagram
   autonumber
@@ -1496,7 +1497,8 @@ strong { color:inherit; }
 </pre></figure>
 <h3>8.3. Страховка критичного (AD-11)</h3>
 <ul>
-<li><code>FOLLOWER</code> или <code>YIELDED</code>, не увидевший <code>delivered</code> по всем единицам доставки критичного события за <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг) (<code>GA_CRIT_FOLLOWER_T</code> = 45 с; у <code>FOLLOWER</code> при живом лидере — просто <code>GA_CRIT_FOLLOWER_T</code>), отправляет недоставленные единицы сам и публикует <code>delivered</code>. Увидев <code>delivered</code>, не отправляет. Задержка по рангу разводит страхующих во времени.</li>
+<li><code>FOLLOWER</code> или <code>YIELDED</code>, не увидевший <code>delivered</code> по всем единицам доставки критичного события за <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг) (<code>GA_CRIT_FOLLOWER_T</code> = 45 с), отправляет недоставленные единицы сам и публикует <code>delivered</code>. Увидев <code>delivered</code>, не отправляет. Задержка по рангу разводит страхующих во времени.</li>
+<li><strong>[2026-10-20]</strong> <strong>Ранг страховки</strong> — позиция узла среди живых логических узлов со здоровым uplink (по heartbeat) в порядке выбора лидера (<code>leader_priority</code>, затем EUI-64) <strong>без текущего <code>LEADER</code></strong>, с 0: первый ведомый ждёт <code>GA_CRIT_FOLLOWER_T</code> (45 с), второй — вдвое дольше (90 с). Без лидера (все <code>YIELDED</code>) — позиция среди всех живых со здоровым uplink в том же порядке (ранг AD-10 для <code>GA_YIELD_BASE</code> uplink не учитывает). Ступени нужны, чтобы при трёх и более узлах ведомые не отправляли одновременно (AD-11, история 3.8).</li>
 <li>Mute никогда не глушит критичное.</li>
 <li>Если открытие эпизода слито с уже доставленным, страховка AD-11 не применяется (§9.4).</li>
 </ul>
@@ -1599,7 +1601,7 @@ strong { color:inherit; }
 <ul>
 <li>Только критичные события, на ключ группы Pushover.</li>
 <li><code>priority=2</code> (emergency): retry <code>GA_PUSHOVER_RETRY</code> (60 с, не меньше 30 с), expire <code>GA_PUSHOVER_EXPIRE</code> (3 ч, не больше 3 ч).</li>
-<li><code>tag = event_id</code>; лишние копии отменяются <code>cancel_by_tag</code>.</li>
+<li><strong>[2026-10-20]</strong> <code>tags = event_id</code>; лишние копии отменяются <code>cancel_by_tag</code>.</li>
 <li><strong>[2026-10-20]</strong> Receipt опрашивается не чаще раза в <code>GA_PUSHOVER_RECEIPT_POLL</code> (5 с) (<code>external-channels.md</code>, история 4.4).</li>
 <li>Подтверждение по receipt → <code>ack</code>.</li>
 </ul>
@@ -1611,7 +1613,7 @@ strong { color:inherit; }
 <li>Правила и конфиг — только локальный веб. Критичное правило выключается только там и временно (≤ <code>GA_CRIT_DISABLE_MAX</code>, 12 ч), с событием всем подписчикам.</li>
 <li>Каждое сообщение подписано узлом-отправителем и статусом (<code>🏠 гараж · ведущий</code>).</li>
 <li>Уведомления о перезагрузке — только владельцу, с причиной сброса; ≤ 1 за <code>GA_REBOOT_NOTIFY_UNEXPECTED</code> (15 мин) / <code>GA_REBOOT_NOTIFY_PLANNED</code> (6 ч).</li>
-<li>Между отправками — пауза <code>GA_TG_SEND_GAP</code> (350 мс).</li>
+<li>Между отправками — пауза <code>GA_TG_SEND_GAP</code> (350 мс); <strong>[2026-10-20]</strong> в один чат — не чаще раза в <code>GA_TG_CHAT_GAP</code> (1 с), в одну группу — не больше <code>GA_TG_GROUP_PER_MIN</code> (20) в минуту; на HTTP 429 узел ждёт <code>retry_after</code> из ответа перед повтором в этот чат (AD-22).</li>
 <li><strong>[2026-10-20]</strong> Подписчиков не больше <code>GA_TG_SUBSCRIBERS_MAX</code> (20), сверх — отказ «Список подписчиков заполнен — обратитесь к владельцу.»; общая тишина <code>/mute N</code> — не дольше <code>GA_MUTE_MAX</code> (24 ч) (история 4.1, 4.5, UX-DR20).</li>
 <li><strong>[2026-10-05]</strong> Выходами из бота управляют владелец и операторы, только выходами с флагом <code>bot_control</code> (кнопки «вкл / выкл / авто»; <strong>[2026-10-13]</strong> у крана — «Закрыть» / «Открыть», «Открыть» — с подтверждением); в вебе — после входа.</li>
 </ul>
@@ -2203,7 +2205,7 @@ strong { color:inherit; }
 <li>MQTT-узел создаёт <code>output_intent</code> и отправляет PUBACK брокеру <strong>только после</strong> записи намерения в FRAM; <strong>[2026-10-13]</strong> намерение и страховочная запись пишутся по тракту тревоги <code>Storage</code> (AD-4). Запись во FRAM — граница надёжности: репликация к пирам для PUBACK не нужна (без пиров достаточно FRAM).</li>
 <li><strong>Ведомый</strong> пишет страховочную запись (выход, значение, срок, <code>mqtt_key</code>, метка из JSON <code>ts</code>, время своего приёма — для отсчёта <code>GA_MQTT_INSURE_T</code>) в отдельный журнал региона <code>Notify</code> во FRAM и только затем отправляет PUBACK.
 <ul>
-<li>На выход хранится одна запись — последнего сообщения (более раннее всё равно проиграет более новому по метке). Записей не больше числа выходов с <code>mqtt_control</code>, ≤ <code>GA_MQTT_INSURE_MAX</code> (32); проверяется при включении флага.</li>
+<li>На выход хранится одна запись — <strong>[2026-10-20]</strong> сообщение с наибольшим <code>ts</code>: состояние выхода задаёт новейшая команда, поэтому потеря страховки более старой безвредна; запоздавшее более старое сообщение запись не вытесняет — узел выхода всё равно отклонил бы его как <code>stale</code>. Записей не больше числа выходов с <code>mqtt_control</code>, ≤ <code>GA_MQTT_INSURE_MAX</code> (32); проверяется при включении флага.</li>
 <li>Запись закрывается тем же условием, что и создание намерения: появилось намерение с этим <code>mqtt_key</code> или прошло <code>GA_CMD_MAX_AGE</code> (<strong>[2026-10-13]</strong> условие «принятое после HLC приёма записи» снято).</li>
 <li>После перезагрузки ведомый возобновляет страховку после синхронизации времени и обмена исходными событиями с пирами; без пиров — после <code>GA_JOIN_GRACE</code>.</li>
 </ul>
@@ -2294,12 +2296,12 @@ strong { color:inherit; }
 <td>запись provisioning: <strong>[2026-10-20]</strong> логическому — роль, ключ Zigbee-сети, ключ сети HMAC с <code>kid</code>, WiFi, внешние секреты; коллектору — роль, ключ Zigbee-сети и свои K_c на каждый <code>kid</code> (FR29)</td>
 </tr>
 <tr>
-<td>SoftAP (своя WiFi-точка), Security 2, PoP с наклейки</td>
+<td>SoftAP (своя WiFi-точка), <strong>[2026-10-20]</strong> Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки)</td>
 <td>логический</td>
 <td>«Создать новую сеть» или «Присоединиться» с пакетом ключей из веба работающего узла</td>
 </tr>
 <tr>
-<td>BLE, Security 2, PoP с наклейки, Web Bluetooth</td>
+<td>BLE, <strong>[2026-10-20]</strong> Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки), Web Bluetooth</td>
 <td>коллектор</td>
 <td>роль, ключ Zigbee-сети, <strong>[2026-10-13]</strong> свой ключ K_c на каждый <code>kid</code> (не ключ сети), имя и зона</td>
 </tr>
@@ -2307,7 +2309,7 @@ strong { color:inherit; }
 </table></div>
 <ul>
 <li><strong>[2026-10-13]</strong> Размер сети ограничен: логических узлов ≤ <code>GA_LOGIC_NODES_MAX</code> (16), коллекторов ≤ <code>GA_COLLECTORS_MAX</code> (32), выходов в сети ≤ <code>GA_OUTPUTS_MAX</code> (64); ввод узла или выхода сверх предела отказывает с объяснением в вебе — регионы FRAM и бюджет эфира посчитаны на эти пределы (AD-23).</li>
-<li>Окно ввода без USB — <strong>[2026-10-20]</strong> SoftAP у логического, BLE у коллектора — ограничено <code>GA_PROVISION_WINDOW</code> (5 мин), открывается после включения или по кнопке и открыто только пока Zigbee-стек не запущен.</li>
+<li>Окно ввода без USB — <strong>[2026-10-20]</strong> SoftAP у логического, BLE у коллектора — ограничено <code>GA_PROVISION_WINDOW</code> (5 мин) и открыто только пока Zigbee-стек не запущен: <strong>[2026-10-20]</strong> невведённый узел открывает его при старте или по нажатию кнопки ввода. Повторный ввод работающего узла по SoftAP или BLE (смена секрета или ключа) — перезагрузка в режим ввода: кнопка ввода, удерживаемая при включении (AD-17, AD-23, история 6.4).</li>
 <li>Все способы пишут одну запись provisioning в один namespace.</li>
 <li>Пакет ключей нового узла шифруется кодом с его наклейки, одноразовый, действует <code>GA_KEYPACK_TTL</code> (30 мин). <strong>[2026-10-13]</strong> Пакет ключей коллектора несёт только его ключи K_c <strong>[2026-10-20]</strong> и ключ Zigbee-сети, не ключ сети HMAC (AD-23, <code>external-channels.md</code>, история 6.4).</li>
 <li>Ключи dev и prod разные. Замена секрета, включая ключ сети HMAC, — только повторный ввод узла; передача ключа по сети запрещена.</li>
@@ -2317,7 +2319,7 @@ strong { color:inherit; }
 <ul>
 <li>Одновременно обновляется не больше одного узла.</li>
 <li><strong>[2026-10-20]</strong> Логический — образ загружают по HTTPS на защищённую паролем служебную страницу самого узла (веб, AD-23); между узлами образ не передаётся; узел обновляет и RCP-прошивку своего H2. Блокировка «один узел за раз» — сетевая, через мягкий конфиг; запрос обновления другого узла ждёт её снятия (история 6.2).</li>
-<li>Коллекторы — по Zigbee OTA Upgrade cluster, сервер — <code>LEADER</code>; класс <code>bulk</code>, уступает <code>critical</code>.</li>
+<li>Коллекторы — по Zigbee OTA Upgrade cluster, сервер — <code>LEADER</code>; класс <code>bulk</code>, уступает <code>critical</code>. <strong>[2026-10-20]</strong> Образ коллектора загружают только на веб-страницу <code>LEADER</code> (на других узлах «Обновления» коллекторов дают ссылку на лидера), между узлами образ не передаётся. Смена лидера посреди обновления безвредно его прерывает: коллектор не применяет недокачанный образ, уже обновлённые остаются обновлёнными, блокировка «один узел за раз» снимается; веб показывает «Обновление коллекторов прервано сменой лидера — загрузите образ на новом лидере» (AD-18, история 6.3).</li>
 <li>Новая прошивка подтверждает себя только после входа в сеть за <strong>[2026-10-20]</strong> <code>GA_OTA_CONFIRM_TIMEOUT</code> (5 мин), иначе откат.</li>
 <li>Сеть с узлами N и N−1 работает без потерь (AD-6).</li>
 <li>Работает ли OTA-сервер на роутере в distributed-сети — открытый вопрос Q4 (история 1.6); запасной путь — своя передача образа через L2 (<code>bulk</code>).</li>
@@ -2382,12 +2384,12 @@ strong { color:inherit; }
 </tr>
 <tr>
 <td><code>Notify</code> → Telegram, Pushover</td>
-<td><code>LEADER</code>; критичное — также <code>FOLLOWER</code> и <code>YIELDED</code> (страховка по рангу)</td>
+<td><code>LEADER</code>; критичное — также <code>FOLLOWER</code> и <code>YIELDED</code> (<strong>[2026-10-20]</strong> страховка ступенями <code>GA_CRIT_FOLLOWER_T × (1 + ранг)</code>, ранг — без текущего <code>LEADER</code>, AD-11)</td>
 <td>элемент исходящей очереди записан и реплицирован</td>
 <td>все единицы доставки <code>delivered</code> или окончательно отклонены</td>
 <td>отправлено, но <code>delivered</code> не записан → новый отправитель отправит снова</td>
 <td><code>YIELDED</code> без некритичной отправки; критичное отправляется и без аренды</td>
-<td>внешний дубль допущен: ≤ 1 на смену лидера; Pushover гасит копии по <code>tag</code></td>
+<td>внешний дубль допущен: ≤ 1 на смену лидера; Pushover гасит копии по <strong>[2026-10-20]</strong> <code>tags</code> (<code>cancel_by_tag</code>)</td>
 <td>AD-10, AD-11, AD-21</td>
 </tr>
 <tr>
@@ -2406,7 +2408,7 @@ strong { color:inherit; }
 <td><code>offset</code> и выполненные <code>update_id</code> записаны и реплицированы до исполнения</td>
 <td>обрезка множества до <code>GA_TG_EXECUTED_IDS</code></td>
 <td>падение до исполнения → новый лидер не исполнит повторно по <code>update_id</code></td>
-<td>новый узел без пиров начинает с <code>offset = −1</code></td>
+<td>новый узел начинает с <code>offset = −1</code>, <strong>[2026-10-20]</strong> только если за <code>GA_JOIN_GRACE</code> пиров не слышно и аренда просрочена или отсутствует, иначе ждёт <code>offset</code> от пира или истечения аренды</td>
 <td>не исполняется дважды</td>
 <td>AD-10</td>
 </tr>
@@ -2424,7 +2426,7 @@ strong { color:inherit; }
 <td>MQTT → намерение</td>
 <td>MQTT-узел; страховка — каждый ведомый</td>
 <td>MQTT-узел — <code>output_intent</code> во FRAM, затем PUBACK; ведомый — страховочная запись во FRAM, затем PUBACK</td>
-<td>намерение — по правилам журнала AD-28; страховочная запись — одна на выход (последнее сообщение), закрывается намерением с её <code>mqtt_key</code> или по <code>GA_CMD_MAX_AGE</code></td>
+<td>намерение — по правилам журнала AD-28; страховочная запись — одна на выход (<strong>[2026-10-20]</strong> сообщение с наибольшим <code>ts</code>; запоздавшее более старое запись не вытесняет), закрывается намерением с её <code>mqtt_key</code> или по <code>GA_CMD_MAX_AGE</code></td>
 <td>падение до записи — брокер повторит в сессию этого подписчика; падение после PUBACK — запись поднимается после перезагрузки, страховка возобновляется после синхронизации с пирами; PUBACK шлёт esp-mqtt после возврата обработчика, ждущего записи <strong>[2026-10-13]</strong> по тракту тревоги; при таймауте PUBACK не уходит (исправленная копия esp-mqtt, Q6)</td>
 <td>каждый подписчик держит свою постоянную сессию <code>ga2-&lt;EUI-64&gt;</code></td>
 <td>отсекаются по <code>cmd_id</code> (<strong>[2026-10-13]</strong> <code>id</code> обязателен); повтор из сессии после переподключения нового намерения не создаёт</td>
@@ -2501,7 +2503,7 @@ strong { color:inherit; }
 <tr>
 <td><code>GA_CRIT_FOLLOWER_T</code></td>
 <td>45 с</td>
-<td>ведомый страхует критичное</td>
+<td>ведомый страхует критичное; <strong>[2026-10-20]</strong> ждёт T × (1 + ранг), ранг — без <code>LEADER</code> (AD-11)</td>
 <td>да</td>
 </tr>
 <tr>
@@ -2875,6 +2877,16 @@ strong { color:inherit; }
 <td>да</td>
 </tr>
 <tr>
+<td><strong>[2026-10-20]</strong> <code>GA_TG_CHAT_GAP</code></td>
+<td>1 с — пауза между отправками в один чат</td>
+<td>нет</td>
+</tr>
+<tr>
+<td><strong>[2026-10-20]</strong> <code>GA_TG_GROUP_PER_MIN</code></td>
+<td>20 сообщений в одну группу в минуту</td>
+<td>нет</td>
+</tr>
+<tr>
 <td><code>GA_PUSHOVER_RETRY</code> / <code>GA_PUSHOVER_EXPIRE</code></td>
 <td>60 с / 3 ч (мягкие)</td>
 <td>да</td>
@@ -3173,7 +3185,7 @@ strong { color:inherit; }
 </tr>
 <tr>
 <td>5</td>
-<td>Числовые коды типов <code>t</code>; номер первой версии <code>v</code> (<strong>[2026-10-20]</strong> <code>PROTO_MIN_VERSION</code> = 1 задан в <code>tunables.md</code>)</td>
+<td>Числовые коды типов <code>t</code> (<strong>[2026-10-20]</strong> первая версия <code>v</code> = 1, <code>PROTO_MIN_VERSION</code> = 1 — решено в AD-6)</td>
 <td>история 1.2 и истории, вводящие тип</td>
 </tr>
 <tr>
@@ -3237,7 +3249,7 @@ strong { color:inherit; }
 <p>Расхождения между каркасом, <code>wire-format.md</code> и компаньонами, найденные при составлении справочника ранее, исправлены в источниках (по коммит 560df2a включительно): хеши MQTT, <code>mqtt_key</code> в страховке, формулировки AD-29 (срок и метка команды, <code>cmd_id</code> как хеш), «<code>critical</code> у коллектора — только Zigbee»; деление бюджета NVS и перевод <code>until</code> → <code>dur_s</code> вынесены в Deferred. Определение ранга и правила приёма через перезагрузки тоже зафиксированы (AD-10, AD-17); Q3 (смена ключа HMAC) решён 2026-10-07 — повторный ввод каждого узла (§2.5). Пять расхождений, отмеченных при обновлении по пятому ревью (стрелка <code>Rules</code> → <code>Storage</code>, состав ядра heartbeat, объявление <code>kid</code> отдельным сообщением, «только <code>Rules</code>» на логическом узле, устаревшая запись журнала решений), исправлены в источниках вместе с решениями владельца A–E. Сверка не полная; ниже — то, что замечено при последнем обновлении, помимо пунктов §18.1.</p>
 <p><strong>[2026-10-20]</strong> Сверка источников 2026-10-20 устранила расхождения, отмеченные документом <code>garageAlarms2-протоколы-обмена.md</code> (§10.2 там): приём события из обмена по подписи пира (<code>durability-contracts.md</code>), ввод S3 через SoftAP в <code>external-channels.md</code>, сертификат от CA системы в истории 5.1, ключи коллектора (K_c и ключ Zigbee-сети) в истории 6.4 и UX-DR53, <code>GA_PUSHOVER_RECEIPT_POLL</code>, <code>GA_TG_SUBSCRIBERS_MAX</code> и <code>GA_MUTE_MAX</code> вместо значений вне <code>tunables.md</code>, пульс «не в <code>ISOLATED</code>», <code>result</code> для любой отброшенной MQTT-команды (AD-24 теперь совпадает с §13.2), OTA логического узла по HTTPS вместо UDP (AD-18); там же исправлены оговорка «если неглухих два и больше» в AD-17 и состав пакета ключей коллектора в AD-23 (пункты 8–9 ниже). Тогда же решены: <code>cmd_id</code> оконного правила = хеш <code>[rule_id, window_start]</code>, <code>GA_OTA_CONFIRM_TIMEOUT</code>, <code>GA_RETRY_BASE</code>/<code>GA_RETRY_MAX</code>, <code>/mode</code> в AD-22, страховка критичного ведомым и уступившим узлом в <code>external-channels.md</code> и <code>EXPERIENCE.md</code>, отчёт «жив» всем подписчикам в AD-19, форматирование журнала из консоли USB до веба (AD-28).</p>
 <ol>
-<li><strong><code>ga_config.h</code> отстаёт от <code>tunables.md</code> и каркаса.</strong> В файле пока нет <code>GA_PROTO_MAC_BYTES</code>, <code>GA_NET_KEY_BYTES</code> (история 1.2), констант выходов и MQTT (эпик 10), <code>GA_SYNC_*</code> (3.5) и <code>GA_BULK_ZB_RATE</code> (3.2); <strong>[2026-10-13]</strong> нет <code>GA_ZB_BCAST_RATE</code>, <code>GA_ZB_BCAST_HB_SHARE</code>, <code>GA_ZB_UCAST_RATE</code>, <code>GA_KID_ANNOUNCE</code>, <code>GA_TS_FUTURE_MAX</code>, <code>GA_LOGIC_NODES_MAX</code>, <code>GA_COLLECTORS_MAX</code>, <code>GA_OUTPUTS_MAX</code>, <code>GA_FLASH_ERASE_MAX_MS</code>, <code>GA_FRAM_INBOX_OWN_RESERVE</code>, <code>GA_VALVE_*</code>, <code>GA_PULSE_*</code>, <code>GA_WEB_LOGIN_LOCKOUT_MAX</code>, <code>GA_WEB_LOGIN_IPS</code> и региона таблицы последних команд выходов; <strong>[2026-10-20]</strong> нет <code>PROTO_MIN_VERSION</code>, <code>GA_RETRY_BASE</code>, <code>GA_RETRY_MAX</code>, <code>GA_NOTIFY_LATE</code>, <code>GA_WHEN_MAX_LEN</code>, <code>GA_WHEN_MAX_DEPTH</code>, <code>GA_EOL_THRESHOLDS</code>, <code>GA_INA219_THRESHOLDS</code>, <code>GA_PUSHOVER_RECEIPT_POLL</code>, <code>GA_TG_SUBSCRIBERS_MAX</code>, <code>GA_MUTE_MAX</code>, <code>GA_OTA_CONFIRM_TIMEOUT</code> (история 1.2 добавляет проверку <code>tunables.md</code> ↔ <code>ga_config.h</code>); <code>GA_FRAM_DEDUP</code> = 3 КБ, <code>GA_FRAM_MQTT</code> = 24 КБ и <code>GA_WEB_LOGIN_LOCKOUT</code> = 5 мин — по прежним значениям (каркас и <code>tunables.md</code>: 30 КБ по формуле, 20 КБ, 1 мин).</li>
+<li><strong><code>ga_config.h</code> отстаёт от <code>tunables.md</code> и каркаса.</strong> В файле пока нет <code>GA_PROTO_MAC_BYTES</code>, <code>GA_NET_KEY_BYTES</code> (история 1.2), констант выходов и MQTT (эпик 10), <code>GA_SYNC_*</code> (3.5) и <code>GA_BULK_ZB_RATE</code> (3.2); <strong>[2026-10-13]</strong> нет <code>GA_ZB_BCAST_RATE</code>, <code>GA_ZB_BCAST_HB_SHARE</code>, <code>GA_ZB_UCAST_RATE</code>, <code>GA_KID_ANNOUNCE</code>, <code>GA_TS_FUTURE_MAX</code>, <code>GA_LOGIC_NODES_MAX</code>, <code>GA_COLLECTORS_MAX</code>, <code>GA_OUTPUTS_MAX</code>, <code>GA_FLASH_ERASE_MAX_MS</code>, <code>GA_FRAM_INBOX_OWN_RESERVE</code>, <code>GA_VALVE_*</code>, <code>GA_PULSE_*</code>, <code>GA_WEB_LOGIN_LOCKOUT_MAX</code>, <code>GA_WEB_LOGIN_IPS</code> и региона таблицы последних команд выходов; <strong>[2026-10-20]</strong> нет <code>PROTO_MIN_VERSION</code>, <code>GA_RETRY_BASE</code>, <code>GA_RETRY_MAX</code>, <code>GA_NOTIFY_LATE</code>, <code>GA_WHEN_MAX_LEN</code>, <code>GA_WHEN_MAX_DEPTH</code>, <code>GA_EOL_THRESHOLDS</code>, <code>GA_INA219_THRESHOLDS</code>, <code>GA_PUSHOVER_RECEIPT_POLL</code>, <code>GA_TG_SUBSCRIBERS_MAX</code>, <code>GA_MUTE_MAX</code>, <code>GA_OTA_CONFIRM_TIMEOUT</code>, <code>GA_TG_CHAT_GAP</code>, <code>GA_TG_GROUP_PER_MIN</code> (история 1.2 добавляет проверку <code>tunables.md</code> ↔ <code>ga_config.h</code>); <code>GA_FRAM_DEDUP</code> = 3 КБ, <code>GA_FRAM_MQTT</code> = 24 КБ и <code>GA_WEB_LOGIN_LOCKOUT</code> = 5 мин — по прежним значениям (каркас и <code>tunables.md</code>: 30 КБ по формуле, 20 КБ, 1 мин).</li>
 <li><strong>[2026-10-13] Пример периода heartbeat в AD-12</strong> — исправлено в источниках 2026-10-13.</li>
 <li><strong>[2026-10-13] Кран и max_on в истории 10.1</strong> — исправлено в источниках 2026-10-13.</li>
 <li><strong>[2026-10-13] Кто шлёт пульс (FR43)</strong> — исправлено в источниках 2026-10-13.</li>
@@ -3246,6 +3258,7 @@ strong { color:inherit; }
 <li><strong>[2026-10-13] Запись цели хода крана в NVS</strong> — исправлено в источниках 2026-10-13.</li>
 <li><strong>[2026-10-20]</strong> <strong>Условие «не меньше двух» в AD-17</strong> (подъём <code>lw</code>) — исправлено в источниках 2026-10-20: «…и не меньше двух, если неглухих два и больше», как в AD-8.</li>
 <li><strong>[2026-10-20]</strong> <strong>Что получает коллектор при вводе (AD-23)</strong> — исправлено в источниках 2026-10-20: пакет ключей коллектора несёт его K_c и ключ Zigbee-сети, не ключ сети HMAC.</li>
+<li><strong>[2026-10-20]</strong> <strong>Ранг страховки без лидера (AD-11)</strong> — исправлено в источниках 2026-10-20: «без лидера (все <code>YIELDED</code>) — позиция среди всех живых со здоровым uplink в том же порядке (ранг AD-10 для <code>GA_YIELD_BASE</code> uplink не учитывает)», так же в истории 3.8; пример периода в AD-12 уточнён «при 16 + 32 и <code>H_к</code> = 1 — около 102 с».</li>
 </ol>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>

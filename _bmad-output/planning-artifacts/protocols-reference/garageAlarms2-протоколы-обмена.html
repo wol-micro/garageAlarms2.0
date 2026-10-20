@@ -199,7 +199,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>Любой узел → все</td>
 <td>Zigbee (логические — и UDP)</td>
 <td>ключ сети или K_c</td>
-<td>широковещательно / адресно</td>
+<td>широковещательно / адресно; heartbeat коллектора — широковещательно с его K_c</td>
 <td>heartbeat, объявление <code>kid</code></td>
 <td><a href="#s3-4">3.4</a></td>
 </tr>
@@ -207,7 +207,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>Л5</td>
 <td>Ввод узла</td>
 <td>USB; SoftAP (S3); BLE + Web Bluetooth (H2); окно <code>GA_PROVISION_WINDOW</code></td>
-<td>Security 2 с кодом с наклейки (PoP); пакет ключей зашифрован кодом с наклейки (AD-17, AD-23)</td>
+<td>Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки); пакет ключей зашифрован кодом с наклейки (AD-17, AD-23)</td>
 <td>компьютер / телефон → узел</td>
 <td>запись provisioning</td>
 <td><a href="#s3-5">3.5</a></td>
@@ -602,7 +602,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <p><a id="s2-6"></a></p>
 <h3>2.6. Версии N и N−1</h3>
 <ul>
-<li>Узел версии N понимает N−1; кадры с <code>v</code> ниже <code>PROTO_MIN_VERSION</code> отвергаются; алгоритм и длина подписи в пределах поддерживаемых версий не ослабевают (AD-6). <code>PROTO_MIN_VERSION</code> = 1 (<code>tunables.md</code>); номер первой версии <code>v</code> в документах прямо не назван (<code>components/proto</code>, история 1.2).</li>
+<li>Узел версии N понимает N−1; кадры с <code>v</code> ниже <code>PROTO_MIN_VERSION</code> отвергаются; алгоритм и длина подписи в пределах поддерживаемых версий не ослабевают (AD-6). Первая версия протокола — <code>v</code> = 1, <code>v</code> = 0 зарезервирован, <code>PROTO_MIN_VERSION</code> = 1 (AD-6, <code>wire-format.md</code>, <code>tunables.md</code>).</li>
 <li>Поля не удаляются и не меняют смысл внутри мажорной версии; новые данные — новыми типами или хвостом нагрузки (AD-5, AD-6).</li>
 <li>Команда выхода не отправляется коллектору, в описании каналов которого нет этого выхода (AD-29).</li>
 <li>Экземпляр правила с незнакомым шаблоном не исполняется и помечается в вебе (AD-6).</li>
@@ -879,7 +879,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <h2>3. Устройство ↔ устройство</h2>
 <p><a id="s3-1"></a></p>
 <h3>3.1. Коллектор → логические узлы</h3>
-<p>Общее для линии Л1: Zigbee, подпись K_c коллектора, кадр ≤ 80 Б. Получателей коллектор берёт только из адресного heartbeat логических узлов, подписанного его K_c; живость — по <code>Membership</code> (AD-8, AD-19). Режим Zigbee-адресации событий коллектора (unicast каждому или Zigbee-широковещание) прямо <strong>не зафиксирован</strong>: AD-8 требует «отправляет каждому живому и повторяет до ACK», история 3.1 считает события в бюджете широковещания (решение — истории 1.7, 3.1).</p>
+<p>Общее для линии Л1: Zigbee, подпись K_c коллектора, кадр ≤ 80 Б. Получателей коллектор берёт только из адресного heartbeat логических узлов, подписанного его K_c; живость — по <code>Membership</code> (AD-8, AD-19). Heartbeat коллектора — Zigbee-широковещание, подписанное его K_c; каждый логический узел выводит K_c и проверяет кадр; адресного heartbeat коллектор → логический узел нет (AD-12, AD-19). Режим Zigbee-адресации событий коллектора (unicast каждому или Zigbee-широковещание) прямо <strong>не зафиксирован</strong>: AD-8 требует «отправляет каждому живому и повторяет до ACK», история 3.1 считает события в бюджете широковещания (решение — истории 1.7, 3.1).</p>
 <h4>3.1.1. Событие датчика (фронт)</h4>
 <div class="tw"><table>
 <thead>
@@ -1107,13 +1107,14 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   B-&gt;&gt;B: Rules: тот же эпизод и тот же event_id
   A-&gt;&gt;TG: сообщение тревоги
   TG--&gt;&gt;A: message_id
-  A-&gt;&gt;PO: priority 2, tag = event_id
+  A-&gt;&gt;PO: priority 2, tags = event_id
   PO--&gt;&gt;A: receipt
   A-&gt;&gt;B: delivered по каждой единице, с message_id
-  Note over B: delivered увиден раньше GA_CRIT_FOLLOWER_T, страховка не нужна
-  alt LEADER молчит дольше GA_CRIT_FOLLOWER_T
+  Note over B: B — первый ведомый со здоровым uplink, ранг 0: ждёт GA_CRIT_FOLLOWER_T, 45 с. Второй ведомый, ранг 1, ждал бы 90 с
+  Note over B: delivered увиден раньше срока, страховка не нужна
+  alt LEADER молчит дольше GA_CRIT_FOLLOWER_T x 1 + ранг
     B-&gt;&gt;TG: недоставленные единицы
-    B-&gt;&gt;PO: недоставленные единицы, тот же tag
+    B-&gt;&gt;PO: недоставленные единицы, те же tags
     B-&gt;&gt;A: delivered
   end</pre></figure>
 <p><a id="s3-2"></a></p>
@@ -1672,10 +1673,11 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 </tbody></table>
 </div>
-<p>Раскладка каждого сообщения и тест размера — <strong>не зафиксировано</strong> (история 3.1, строки в <code>wire-format.md</code>). Адресация heartbeat коллектора и периодичность объявления <code>kid</code> коллектором — <strong>не зафиксировано</strong> (история 3.1).</p>
+<p>У коллектора все сообщения heartbeat — Zigbee-широковещание с его K_c; каждый логический узел выводит K_c и проверяет кадр; адресного heartbeat коллектор → логический узел нет. Ядро идёт каждый период, части <code>lw</code> и здоровье — только при изменении (AD-12, AD-19).</p>
+<p>Раскладка каждого сообщения и тест размера — <strong>не зафиксировано</strong> (история 3.1, строки в <code>wire-format.md</code>). Периодичность объявления <code>kid</code> коллектором — <strong>не зафиксировано</strong> (история 3.1).</p>
 <p><strong>Период.</strong> Базовый: <code>GA_HB_LOGIC</code> = 10 с, <code>GA_HB_COLLECTOR</code> = 30 с. По Zigbee период растёт с числом узлов (записи <code>node/&lt;eui&gt;</code>):
-<code>max(GA_HB_*, N_узлов / (GA_ZB_BCAST_RATE × GA_ZB_BCAST_HB_SHARE), N_логических × N_коллекторов / (GA_ZB_UCAST_RATE × GA_ZB_BCAST_HB_SHARE))</code>,
-где <code>GA_ZB_BCAST_RATE</code> = 1/с, <code>GA_ZB_BCAST_HB_SHARE</code> = 50 %, <code>GA_ZB_UCAST_RATE</code> = 10/с (уточняются в истории 1.7). Логический узел объявляет период в ядре, коллектор берёт его оттуда. На стенде 2 + 2 — базовые периоды; при 16 + 32 — около 102 с и <code>stale</code> около 5 мин (AD-12).</p>
+<code>max(GA_HB_*, (N_логических + N_коллекторов × H_к) / (GA_ZB_BCAST_RATE × GA_ZB_BCAST_HB_SHARE), N_логических × N_коллекторов / (GA_ZB_UCAST_RATE × GA_ZB_BCAST_HB_SHARE))</code>,
+где <code>H_к</code> — число широковещательных сообщений heartbeat коллектора за период (ядро; части <code>lw</code> и здоровье — только при изменении), второе слагаемое — адресный heartbeat логических узлов коллекторам, <code>GA_ZB_BCAST_RATE</code> = 1/с, <code>GA_ZB_BCAST_HB_SHARE</code> = 50 %, <code>GA_ZB_UCAST_RATE</code> = 10/с (уточняются в истории 1.7). Логический узел объявляет период в ядре, коллектор берёт его оттуда. На стенде 2 + 2 — базовые периоды; при 16 + 32 и <code>H_к</code> = 1 — около 102 с и <code>stale</code> около 5 мин (AD-12).</p>
 <p><strong>Что делают по heartbeat.</strong></p>
 <div class="tw"><table>
 <thead>
@@ -1758,8 +1760,8 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
     A-&gt;&gt;C: ядро адресно, подпись K_c, ts = время
     B-&gt;&gt;A: ядро
     B-&gt;&gt;C: ядро адресно
-    C-&gt;&gt;A: heartbeat коллектора: b, версии параметров и local_rules
-    C-&gt;&gt;B: heartbeat коллектора
+    C-&gt;&gt;A: heartbeat коллектора широковещательно, подпись K_c: b, версии параметров и local_rules
+    C-&gt;&gt;B: тот же широковещательный кадр
   end
   Note over A: питание A выключено
   B-&gt;&gt;B: 3 пропущенных периода: A stale, событие узел пропал
@@ -1769,7 +1771,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   Note over B: дальше аренда Telegram, раздел 4</pre></figure>
 <p><a id="s3-5"></a></p>
 <h3>3.5. Ввод узла и смена ключа сети</h3>
-<p><strong>Ввод</strong> (AD-17, AD-23, <code>external-channels.md</code>). Пути: USB — любой узел; без USB логический узел (S3) — через свою WiFi-точку (SoftAP), коллектор (H2) — по BLE. Окно ввода без USB (SoftAP у S3, BLE у H2) ограничено <code>GA_PROVISION_WINDOW</code> = 5 мин, открыто после включения или по кнопке и только пока Zigbee-стек не запущен; после ввода выключается. Все способы пишут одну запись provisioning в один namespace. Размер сети ограничен <code>GA_LOGIC_NODES_MAX</code> (16) / <code>GA_COLLECTORS_MAX</code> (32) / <code>GA_OUTPUTS_MAX</code> (64); ввод сверх предела отказывает с объяснением в вебе.</p>
+<p><strong>Ввод</strong> (AD-17, AD-23, <code>external-channels.md</code>). Пути: USB — любой узел; без USB логический узел (S3) — через свою WiFi-точку (SoftAP), коллектор (H2) — по BLE. Окно ввода без USB (SoftAP у S3, BLE у H2) ограничено <code>GA_PROVISION_WINDOW</code> = 5 мин и открыто только пока Zigbee-стек не запущен: невведённый узел открывает его при старте или по нажатию кнопки ввода; после ввода окно выключается. Повторный ввод работающего узла по SoftAP или BLE (смена секрета или ключа) — перезагрузка в режим ввода: кнопка ввода, удерживаемая при включении (AD-17, история 6.4). Защита сессии — Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки). Все способы пишут одну запись provisioning в один namespace. Размер сети ограничен <code>GA_LOGIC_NODES_MAX</code> (16) / <code>GA_COLLECTORS_MAX</code> (32) / <code>GA_OUTPUTS_MAX</code> (64); ввод сверх предела отказывает с объяснением в вебе.</p>
 <div class="tw"><table>
 <thead>
 <tr>
@@ -1826,12 +1828,12 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <tr>
 <td>своя WiFi-точка (SoftAP), страница в любом браузере</td>
 <td>логический</td>
-<td><code>network_provisioning</code> 1.2.5; «Создать новую сеть» (генерирует ключи сети и CA) или «Присоединиться» с пакетом ключей из веба работающего узла; Security 2 с кодом с наклейки (история 6.4)</td>
+<td><code>network_provisioning</code> 1.2.5; «Создать новую сеть» (генерирует ключи сети и CA) или «Присоединиться» с пакетом ключей из веба работающего узла; Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки) (история 6.4)</td>
 </tr>
 <tr>
 <td>BLE, Web Bluetooth из веба работающей системы («Добавить коллектор»)</td>
 <td>коллектор</td>
-<td><code>protocomm</code> со своим endpoint, Security 2 с кодом подтверждения (PoP) с наклейки (история 6.4)</td>
+<td><code>protocomm</code> со своим endpoint, Security 2 (SRP6a: логин — EUI-64 узла, пароль — код с наклейки) (история 6.4)</td>
 </tr>
 </tbody></table>
 </div>
@@ -1841,11 +1843,11 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   actor O as Владелец с телефоном
   participant W as Веб логического узла
   participant C as Коллектор в окне ввода
-  O-&gt;&gt;C: включение или кнопка ввода, окно GA_PROVISION_WINDOW
+  O-&gt;&gt;C: старт невведённого узла или кнопка ввода, окно GA_PROVISION_WINDOW
   O-&gt;&gt;W: Узлы, Добавить коллектор, после входа
   W-&gt;&gt;C: поиск по Web Bluetooth
   O-&gt;&gt;W: сверка EUI, код с наклейки
-  W-&gt;&gt;C: сессия Security 2 с PoP
+  W-&gt;&gt;C: сессия Security 2, SRP6a: логин EUI-64, пароль код с наклейки
   W-&gt;&gt;W: node/eui: воплощение max известный и надгробие плюс 1
   W-&gt;&gt;W: вывод K_c на каждый действующий kid
   W-&gt;&gt;C: роль, ключ Zigbee-сети, K_c по kid, имя, зона
@@ -1853,7 +1855,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   C-&gt;&gt;C: перезагрузка, запуск Zigbee
   C-&gt;&gt;W: heartbeat и описание каналов, подпись K_c
   W-&gt;&gt;O: каналы в Новых каналах</pre></figure>
-<p><strong>Смена ключа сети</strong> (AD-5, AD-23). Ключ меняется только повторным вводом каждого узла; по сети не передаётся никогда. Ключ Zigbee-сети не меняется (его смена — повторный ввод всех узлов с перерывом, вне MVP). Повторный ввод сохраняет воплощение, <code>boot</code>, буфер событий, слоты <code>protect</code>, счётчик зацикливания и журнал FRAM; после ввода автор переподписывает свой буфер текущим ключом.</p>
+<p><strong>Смена ключа сети</strong> (AD-5, AD-23). Ключ меняется только повторным вводом каждого узла; по сети не передаётся никогда. Ключ Zigbee-сети не меняется (его смена — повторный ввод всех узлов с перерывом, вне MVP). Повторный ввод (по SoftAP или BLE — после перезагрузки с удержанием кнопки ввода) сохраняет воплощение, <code>boot</code>, буфер событий, слоты <code>protect</code>, счётчик зацикливания и журнал FRAM; после ввода автор переподписывает свой буфер текущим ключом.</p>
 <figure class="diagram"><pre class="mermaid">sequenceDiagram
   autonumber
   actor O as Владелец
@@ -1886,7 +1888,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <tbody><tr>
 <td>Путь</td>
 <td>образ загружают по HTTPS на защищённую паролем служебную страницу самого узла (веб, AD-23); между узлами образ не передаётся; узел обновляет и RCP-прошивку своего H2 (AD-18, история 6.2)</td>
-<td>Zigbee OTA Upgrade cluster, сервер — <code>LEADER</code>; класс <code>bulk</code>, ограничен по скорости и уступает <code>critical</code> (AD-12, AD-18)</td>
+<td>Zigbee OTA Upgrade cluster, сервер — <code>LEADER</code>; образ загружают только на веб-страницу <code>LEADER</code>, на других узлах «Обновления» коллекторов дают ссылку на лидера; между узлами образ не передаётся; класс <code>bulk</code>, ограничен по скорости и уступает <code>critical</code> (AD-12, AD-18)</td>
 </tr>
 <tr>
 <td>Проверка</td>
@@ -1901,7 +1903,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <tr>
 <td>Очередь</td>
 <td>не больше одного узла одновременно; блокировка «один узел за раз» — сетевая, через мягкий конфиг; запрос обновления другого узла ждёт её снятия (AD-18, история 6.2)</td>
-<td>по одному; при смене лидера обновление продолжается или начинается заново (история 6.3)</td>
+<td>по одному; смена лидера безвредно прерывает обновление: недокачанный образ не применяется, уже обновлённые остаются обновлёнными, блокировка снимается, веб показывает «Обновление коллекторов прервано сменой лидера — загрузите образ на новом лидере» (AD-18, история 6.3)</td>
 </tr>
 <tr>
 <td>Открыто</td>
@@ -1915,7 +1917,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   actor O as Владелец в вебе
   participant L as LEADER, OTA-сервер
   participant C as Коллектор
-  O-&gt;&gt;L: образ коллектора, страница Обновления
+  O-&gt;&gt;L: образ коллектора на странице Обновления лидера, на других узлах там ссылка на лидера
   L-&gt;&gt;L: проверка подписи образа
   L-&gt;&gt;C: Zigbee OTA Upgrade cluster, класс bulk, с ограничением скорости
   Note over L,C: кадры critical идут первыми, события доставляются
@@ -1925,6 +1927,11 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
     C-&gt;&gt;L: heartbeat с новым boot
   else не вошёл за GA_OTA_CONFIRM_TIMEOUT
     C-&gt;&gt;C: откат на прежнюю
+  end
+  opt лидер сменился посреди передачи
+    C-&gt;&gt;C: недокачанный образ не применяется
+    L-&gt;&gt;L: блокировка один узел за раз снята
+    L-&gt;&gt;O: Обновление коллекторов прервано сменой лидера, загрузите образ на новом лидере
   end</pre></figure>
 <hr>
 <p><a id="s4"></a></p>
@@ -1950,7 +1957,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>AD-10</td>
 </tr>
 <tr>
-<td><code>editMessage</code> с <code>parse_mode=HTML</code></td>
+<td><code>editMessageText</code> с <code>parse_mode=HTML</code></td>
 <td>правка меню на месте; правка сообщения тревоги у всех получателей после «Принято» (<code>tg_msg_id</code> хранится по каждой единице доставки); строка «повторных срабатываний: N»; продление аренды «без звука и без нового закрепа»</td>
 <td>UX-DR3, UX-DR17, AD-21, <code>EXPERIENCE.md</code></td>
 </tr>
@@ -1981,7 +1988,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <ul>
 <li>До исполнения <code>offset</code> и выполненный <code>update_id</code> пишутся в FRAM и реплицируются; исполнение — после подтверждения <code>offset</code> хотя бы одним живым пиром, без пиров — после записи в FRAM.</li>
 <li>Не исполняется команда с известным <code>update_id</code>, с <code>update_id</code> ≤ минимального в множестве или с <code>date</code> старше <code>GA_CMD_MAX_AGE</code> (10 мин).</li>
-<li>Узел без состояния <code>Notify</code> от пиров начинает с <code>offset = −1</code> и полученное последнее обновление не исполняет — только если за <code>GA_JOIN_GRACE</code> не услышан ни один пир, а аренда просрочена или отсутствует.</li>
+<li>Узел без состояния <code>Notify</code> от пиров начинает опрос с <code>offset = −1</code> (полученное последнее обновление не исполняет), только если за <code>GA_JOIN_GRACE</code> не услышан ни один пир и аренда просрочена или отсутствует; иначе он не опрашивает, пока не получит <code>offset</code> от пира или аренда не истечёт.</li>
 <li>Роль отправителя — по <code>from.id</code>, подтверждённому сервером Telegram, не по <code>chat.id</code>; команды — только от подписанных чатов, кроме <code>/subscribe</code> (AD-22, история 4.1).</li>
 <li>Опасные команды — экран «что произойдёт» с <code>[✅ Подтвердить] [✖ Отмена]</code>; подтверждение устаревает через <code>GA_CONFIRM_TTL</code> (2 мин) — «Время подтверждения вышло, повторите.» (UX-DR11).</li>
 </ul>
@@ -2125,8 +2132,8 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <p>Как реализуется «без звука» для «Моей тишины» — параметр Bot API в источниках не назван (<strong>не зафиксировано</strong>, история 4.5).</p>
 <p><strong>Темп, ошибки, повторы.</strong></p>
 <ul>
-<li>Между отправками — пауза <code>GA_TG_SEND_GAP</code> (350 мс) (AD-22).</li>
-<li>Сетевые ошибки — повтор с экспоненциальной паузой, не abort (Consistency Conventions); каждое ожидание ограничено таймаутом «без прогресса» (AD-3). Значения пауз и таймаутов HTTP, обработка 429 и <code>retry_after</code> — <strong>не зафиксировано</strong>.</li>
+<li>Между отправками — пауза <code>GA_TG_SEND_GAP</code> (350 мс); в один чат — не чаще раза в <code>GA_TG_CHAT_GAP</code> (1 с), в одну группу — не больше <code>GA_TG_GROUP_PER_MIN</code> (20) в минуту; на HTTP 429 узел ждёт <code>retry_after</code> из ответа перед повтором в этот чат (AD-22).</li>
+<li>Сетевые ошибки — повтор с экспоненциальной паузой, не abort (Consistency Conventions); каждое ожидание ограничено таймаутом «без прогресса» (AD-3). Значения пауз и таймаутов HTTP и обработка прочих ошибок — <strong>не зафиксировано</strong>.</li>
 <li>Отправлено, но <code>delivered</code> не записан — новый отправитель отправит снова: ≤ 1 внешнего дубля на единицу доставки на смену лидера (AD-10, AD-27).</li>
 <li>Окончательно отклонённая единица удаляется вместе с доставленными (AD-21); какие ответы API считаются окончательным отказом — <strong>не зафиксировано</strong>.</li>
 </ul>
@@ -2172,7 +2179,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </thead>
 <tbody><tr>
 <td>Кто отправляет</td>
-<td><code>LEADER</code>; страховка — <code>FOLLOWER</code> и <code>YIELDED</code> после <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг) (45 с; у <code>FOLLOWER</code> при живом лидере — 45 с)</td>
+<td><code>LEADER</code>; страховка — <code>FOLLOWER</code> и <code>YIELDED</code> после <code>GA_CRIT_FOLLOWER_T</code> × (1 + ранг); ранг — позиция среди живых логических узлов со здоровым uplink в порядке выбора лидера без текущего <code>LEADER</code>, с 0: первый ждёт 45 с, второй 90 с; без лидера (все <code>YIELDED</code>) — позиция среди всех живых со здоровым uplink в том же порядке (ранг AD-10 для <code>GA_YIELD_BASE</code> uplink не учитывает)</td>
 <td>AD-10, AD-11</td>
 </tr>
 <tr>
@@ -2206,8 +2213,8 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td><code>tunables.md</code>, <code>external-channels.md</code></td>
 </tr>
 <tr>
-<td><code>tag</code></td>
-<td><code>event_id</code></td>
+<td><code>tags</code></td>
+<td><code>event_id</code>; копии отменяются <code>cancel_by_tag</code></td>
 <td>AD-21</td>
 </tr>
 <tr>
@@ -2258,7 +2265,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
   participant B as FOLLOWER
   participant PO as Pushover API
   actor H as Член семьи
-  A-&gt;&gt;PO: сообщение: priority 2, retry, expire, tag = event_id, ключ группы
+  A-&gt;&gt;PO: сообщение: priority 2, retry, expire, tags = event_id, ключ группы
   PO--&gt;&gt;A: receipt
   A-&gt;&gt;A: receipt в FRAM
   A-&gt;&gt;B: delivered и receipt, репликация
@@ -2440,7 +2447,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <p><strong>PUBACK — после FRAM</strong> (AD-24, <code>durability-contracts.md</code>).</p>
 <ul>
 <li>MQTT-узел создаёт <code>output_intent</code> (уровень <code>manual</code>, <code>mqtt_key</code> = <code>cmd_id</code>) и пишет его во FRAM по тракту тревоги <code>Storage</code>; репликация к пирам для PUBACK не требуется.</li>
-<li>Ведомый пишет страховочную запись (выход, значение, срок, <code>mqtt_key</code>, метка из JSON <code>ts</code>, время своего приёма) в отдельный журнал региона <code>Notify</code>; одна запись на выход — последнего сообщения; записей ≤ <code>GA_MQTT_INSURE_MAX</code> (32).</li>
+<li>Ведомый пишет страховочную запись (выход, значение, срок, <code>mqtt_key</code>, метка из JSON <code>ts</code>, время своего приёма) в отдельный журнал региона <code>Notify</code>; одна запись на выход — сообщение с наибольшим <code>ts</code>: выход задаёт новейшая команда, поэтому потеря страховки более старой безвредна, а запоздавшее более старое сообщение запись не вытесняет (узел выхода всё равно отклонил бы его как <code>stale</code>); записей ≤ <code>GA_MQTT_INSURE_MAX</code> (32).</li>
 <li>PUBACK шлёт сам esp-mqtt после возврата синхронного обработчика; обработчик ждёт подтверждения записи не дольше <code>GA_MQTT_PERSIST_WAIT</code> (200 мс). Нет подтверждения — PUBACK не уходит, узел переподключается, брокер повторяет сообщение в сессию; одно критичное событие здоровья на эпизод неисправности FRAM.</li>
 <li>Штатный esp-mqtt так не умеет, основной путь — исправленная копия компонента с решением о PUBACK из обработчика (Q6, история 10.6).</li>
 </ul>
@@ -2612,7 +2619,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 <tr>
 <td>Ввод и OTA</td>
-<td>«Добавить коллектор» (Web Bluetooth), «Добавить большой узел» (пакет ключей, <code>GA_KEYPACK_TTL</code> 30 мин), загрузка образа по HTTPS на служебную страницу узла — разделы 3.5, 3.6</td>
+<td>«Добавить коллектор» (Web Bluetooth), «Добавить большой узел» (пакет ключей, <code>GA_KEYPACK_TTL</code> 30 мин), загрузка образа по HTTPS на служебную страницу узла (образ коллектора — только на странице <code>LEADER</code>, на других узлах — ссылка на лидера) — разделы 3.5, 3.6</td>
 <td>AD-18, UX-DR53, UX-DR57</td>
 </tr>
 </tbody></table>
@@ -2860,9 +2867,9 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 <tr>
 <td><code>GA_CRIT_FOLLOWER_T</code></td>
-<td>45 с × (1 + ранг)</td>
+<td>45 с; ждут T × (1 + ранг): 45 с, 90 с, …</td>
 <td>Л7, Л8</td>
-<td>страховка критичного</td>
+<td>страховка критичного; ранг — среди живых со здоровым uplink без <code>LEADER</code></td>
 </tr>
 <tr>
 <td><code>GA_LEASE_RENEW</code> / <code>GA_LEASE_TTL</code></td>
@@ -2889,13 +2896,37 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>пауза между отправками</td>
 </tr>
 <tr>
+<td><code>GA_TG_CHAT_GAP</code></td>
+<td>1 с</td>
+<td>Л7</td>
+<td>пауза между отправками в один чат</td>
+</tr>
+<tr>
+<td><code>GA_TG_GROUP_PER_MIN</code></td>
+<td>20 в минуту</td>
+<td>Л7</td>
+<td>сообщений в одну группу, не больше</td>
+</tr>
+<tr>
 <td><code>GA_CONFIRM_TTL</code></td>
 <td>2 мин</td>
 <td>Л7</td>
 <td>подтверждение опасной команды</td>
 </tr>
 <tr>
-<td><code>GA_REBOOT_NOTIFY_UNEXPECTED</code> / <code>_PLANNED</code></td>
+<td><code>GA_BOT_EVENTS_PAGE</code></td>
+<td>10</td>
+<td>Л7</td>
+<td>событий на странице «События»</td>
+</tr>
+<tr>
+<td><code>GA_STATS_DAYS</code></td>
+<td>7 дней</td>
+<td>Л7</td>
+<td>период «Статистики» владельца</td>
+</tr>
+<tr>
+<td><code>GA_REBOOT_NOTIFY_UNEXPECTED</code> / <code>GA_REBOOT_NOTIFY_PLANNED</code></td>
 <td>≤ 1 за 15 мин / ≤ 1 за 6 ч</td>
 <td>Л7</td>
 <td>уведомление о перезагрузке</td>
@@ -2985,7 +3016,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>пинг / пауза при застрявшем критичном</td>
 </tr>
 <tr>
-<td><code>GA_WEB_LOGIN_ATTEMPTS</code> / <code>_LOCKOUT</code> / <code>_LOCKOUT_MAX</code> / <code>_IPS</code></td>
+<td><code>GA_WEB_LOGIN_ATTEMPTS</code> / <code>GA_WEB_LOGIN_LOCKOUT</code> / <code>GA_WEB_LOGIN_LOCKOUT_MAX</code> / <code>GA_WEB_LOGIN_IPS</code></td>
 <td>5 / 1 мин / 1 ч / 32</td>
 <td>Л11</td>
 <td>блокировка входа по IP</td>
@@ -2995,6 +3026,18 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>5–10 с</td>
 <td>Л11</td>
 <td>обновление сводки</td>
+</tr>
+<tr>
+<td><code>GA_DISABLE_STEP</code></td>
+<td>30 мин</td>
+<td>Л11</td>
+<td>шаг выбора срока выключения тревог</td>
+</tr>
+<tr>
+<td><code>GA_CRIT_DISABLE_DEFAULT</code> / <code>GA_CRIT_DISABLE_MAX</code></td>
+<td>2 ч (мягкая) / 12 ч</td>
+<td>Л11</td>
+<td>выключение критичного правила: по умолчанию / максимум</td>
 </tr>
 <tr>
 <td><code>GA_KEYPACK_TTL</code></td>
@@ -3020,6 +3063,78 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>все</td>
 <td>допуск срабатывания таймаута после <code>next_deadline</code></td>
 </tr>
+<tr>
+<td><strong>Прочее</strong> — не привязано к одной линии</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>GA_LOGIC_NODES_MAX</code> / <code>GA_COLLECTORS_MAX</code> / <code>GA_OUTPUTS_MAX</code></td>
+<td>16 / 32 / 64</td>
+<td>вся сеть</td>
+<td>предел размера сети; ввод сверх него отказывает</td>
+</tr>
+<tr>
+<td><code>GA_ALARM_DEBOUNCE</code> / <code>GA_ALARM_COOLDOWN</code></td>
+<td>200 мс / 2 мин (мягкие)</td>
+<td>на узле-источнике</td>
+<td>антидребезг / cooldown дыма и сухого контакта</td>
+</tr>
+<tr>
+<td><code>GA_MOTION_DEBOUNCE</code> / <code>GA_MOTION_COOLDOWN</code> / <code>GA_PIR_WARMUP</code></td>
+<td>400 мс / 5 мин / 60 с (мягкие)</td>
+<td>на узле-источнике</td>
+<td>антидребезг / cooldown / прогрев PIR</td>
+</tr>
+<tr>
+<td><code>GA_PIR_STUCK</code></td>
+<td>2 ч (мягкая)</td>
+<td>на узле-источнике</td>
+<td>залипший PIR → неисправность</td>
+</tr>
+<tr>
+<td><code>GA_ALARM_REARM</code></td>
+<td>10 мин</td>
+<td>правила</td>
+<td>эпизод: пауза до новой тревоги после нормы или <code>ack</code></td>
+</tr>
+<tr>
+<td><code>GA_EPISODE_GRACE</code> / <code>GA_EPISODE_MAX</code></td>
+<td>60 с / 1 ч</td>
+<td>правила</td>
+<td>эпизод: запас на опоздавшие / максимум</td>
+</tr>
+<tr>
+<td><code>GA_RULE_WINDOW_MAX</code></td>
+<td>1 ч</td>
+<td>правила</td>
+<td>максимальное окно правила</td>
+</tr>
+<tr>
+<td><code>GA_STORAGE_CHUNK</code></td>
+<td>512 Б</td>
+<td>на узле</td>
+<td>кусок фоновой записи <code>Storage</code></td>
+</tr>
+<tr>
+<td><code>GA_FLASH_OP_MAX_MS</code> / <code>GA_FLASH_ERASE_MAX_MS</code></td>
+<td>20 мс / задаётся в истории 1.5</td>
+<td>на узле</td>
+<td>операция записи во флеш / стирание сектора</td>
+</tr>
+<tr>
+<td><code>GA_FRAM_*</code></td>
+<td>таблица регионов каркаса (256 КБ)</td>
+<td>на логическом узле</td>
+<td>регионы FRAM</td>
+</tr>
+<tr>
+<td><code>GA_TASK_*</code></td>
+<td>порядок по AD-26, числа — история 2.1</td>
+<td>на узле</td>
+<td>карта задач: ядро, приоритет, стек</td>
+</tr>
 </tbody></table>
 </div>
 <hr>
@@ -3037,7 +3152,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </thead>
 <tbody><tr>
 <td>1</td>
-<td>Числовые коды типов <code>t</code>; номер первой версии <code>v</code> (<code>PROTO_MIN_VERSION</code> = 1 задан в <code>tunables.md</code>)</td>
+<td>Числовые коды типов <code>t</code></td>
 <td>история 1.2, <code>components/proto</code></td>
 </tr>
 <tr>
@@ -3052,7 +3167,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 <tr>
 <td>4</td>
-<td>Режим Zigbee-адресации событий и heartbeat коллектора (unicast каждому или широковещание); периодичность объявления <code>kid</code> коллектором</td>
+<td>Режим Zigbee-адресации событий коллектора (unicast каждому или широковещание; heartbeat коллектора уже решён — широковещательно с K_c, AD-12, AD-19); периодичность объявления <code>kid</code> коллектором</td>
 <td>истории 1.7, 3.1</td>
 </tr>
 <tr>
@@ -3112,7 +3227,7 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 </tr>
 <tr>
 <td>16</td>
-<td>Telegram: методы отправки и закрепления, параметры long polling, «без звука», обработка 429 и ошибок, что считается окончательным отказом, поведение при откреплении аренды</td>
+<td>Telegram: методы отправки и закрепления, параметры long polling, «без звука», обработка ошибок, кроме 429, что считается окончательным отказом, поведение при откреплении аренды</td>
 <td>истории 2.5, 3.9, 4.2, 4.5</td>
 </tr>
 <tr>
@@ -3217,6 +3332,22 @@ h4 { font-size:1rem; margin:1.4em 0 .4em; }
 <td>11</td>
 <td>AD-23: «пакет ключей коллектора несёт только его ключи K_c»</td>
 <td>«…только его ключи K_c (AD-5) и ключ Zigbee-сети, не ключ сети HMAC», как в <code>external-channels.md</code> и FR29</td>
+</tr>
+</tbody></table>
+</div>
+<p>После критики 9-го раунда (2026-10-20) замечено и в тот же день исправлено в источниках ещё одно расхождение:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Было</th>
+<th>Как решено в источниках</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>12</td>
+<td>AD-11: ранг страховки без лидера — «ранг AD-10 среди всех живых со здоровым uplink», хотя ранг AD-10 uplink не учитывает; история 3.8 — «среди всех живых логических узлов»</td>
+<td>AD-11 и история 3.8: «без лидера (все <code>YIELDED</code>) — позиция среди всех живых со здоровым uplink в том же порядке (ранг AD-10 для <code>GA_YIELD_BASE</code> uplink не учитывает)»; заодно пример AD-12 уточнён: «при 16 + 32 и <code>H_к</code> = 1 — около 102 с»</td>
 </tr>
 </tbody></table>
 </div>
