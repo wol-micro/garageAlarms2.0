@@ -61,6 +61,8 @@ context:
 
 - Consistency sweep (human-authorized, 2026-10-20): the `cmd_id` input above and the `lw`/`lwd` wording were aligned with `wire-format.md`; no change of intent.
 
+- Protocol version (human-authorized, 2026-10-20, critique round 9): the first protocol version is `v` = 1, `v` = 0 is reserved; `PROTO_MIN_VERSION` = 1, frames below it are rejected.
+
 </frozen-after-approval>
 
 ## Code Map

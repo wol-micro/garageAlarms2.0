@@ -6,7 +6,7 @@
 
 | Константа | Имя | Старт | Мягкая |
 | --- | --- | --- | --- |
-| T — ведомый страхует критичное | `GA_CRIT_FOLLOWER_T` | 45 с | нет |
+| T — ведомый страхует критичное (ждёт T × (1 + ранг), AD-11) | `GA_CRIT_FOLLOWER_T` | 45 с | нет |
 | N — uplink потерян | `GA_UPLINK_LOST` | 60 с неудач | нет |
 | M — uplink восстановлен | `GA_UPLINK_RESTORED` | 120 с успеха | нет |
 | Возврат лидерства приоритетному узлу | `GA_LEADER_RETURN` | 15 мин стабильного uplink | нет |
@@ -97,6 +97,8 @@
 | Ежедневный отчёт «жив» | `GA_DAILY_REPORT_TIME` | 09:00 местного | да |
 | Пометка «с опозданием»: сообщение пролежало в очереди дольше | `GA_NOTIFY_LATE` | 5 мин | нет |
 | Пауза между отправками в Telegram | `GA_TG_SEND_GAP` | 350 мс | нет |
+| Пауза между отправками в один чат Telegram | `GA_TG_CHAT_GAP` | 1 с | нет |
+| Сообщений в одну группу Telegram в минуту, не больше | `GA_TG_GROUP_PER_MIN` | 20 | нет |
 | Pushover emergency: retry / expire | `GA_PUSHOVER_RETRY` / `GA_PUSHOVER_EXPIRE` | 60 с / 3 ч | да |
 | Опрос receipt Pushover, не чаще | `GA_PUSHOVER_RECEIPT_POLL` | 5 с | нет |
 | Подписчиков Telegram, не больше | `GA_TG_SUBSCRIBERS_MAX` | 20 | нет |
