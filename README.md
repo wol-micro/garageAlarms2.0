@@ -213,7 +213,7 @@ UX mockups in the dark **Cold Steel NOC** theme (bot and web text is Russian). S
 | --- | --- | --- |
 | 💬 **Telegram bot**<br>Everyday use: status, sensors by zone, event history, «Принято» (ack) on alarms, modes (home / away / night), personal and global mute. Roles: owner, operator, subscriber. | 🚨 **Pushover**<br>Emergency alerts for critical events to the whole family, repeating until someone acknowledges; an ack in any channel stops repeats everywhere. | 🖥️ **Local web UI**<br>LAN only, HTTPS with the system's own CA: nodes, sensors, zones and their adjacency graph, rules, credentials, MQTT, updates. |
 | 🧩 **Rules**<br>Nine templates — threshold, rate of change, health, coincidence, chain, trace across zones, aggregation, action, mode/schedule — with an optional `when` condition. Actions also switch relays and buzzers on collectors; simple ones run on the collector itself. | 🌡️ **Sensor driver gateway**<br>1-Wire and I²C; a new sensor type is one driver file and a rebuild. Starting set: DS18B20, SHT3x/4x, BME280/680/688, SGP40/41, SCD40/41, BH1750, VEML7700, INA219, ADS1115, plus dry contacts and pulse counters. | 📤 **MQTT**<br>Mirror of events, states and health with its own bounded buffer — it can never push an alarm out of the main queue; accepts commands for outputs that allow it. |
-| 🔄 **OTA**<br>Every node, one at a time, with rollback; collectors via the Zigbee OTA cluster, logic nodes over UDP together with their H2 radio firmware. | 🔐 **Security**<br>Own CA for HTTPS, every frame signed (HMAC), anti-replay, secrets in encrypted NVS, signed OTA images, secure boot v2 + flash encryption on production logic nodes. | 🛠️ **Setup**<br>USB provisioning; a logic node via its own WiFi access point, a collector via Web Bluetooth (BLE Security 2, code on the sticker). |
+| 🔄 **OTA**<br>Every node, one at a time, with rollback; collectors via the Zigbee OTA cluster, logic nodes by HTTPS upload to the node's own service page, together with their H2 radio firmware. | 🔐 **Security**<br>Own CA for HTTPS, every frame signed (HMAC), anti-replay, secrets in encrypted NVS, signed OTA images, secure boot v2 + flash encryption on all production nodes, collectors included. | 🛠️ **Setup**<br>USB provisioning; a logic node via its own WiFi access point, a collector via Web Bluetooth (BLE Security 2, code on the sticker). |
 
 ## Architecture at a glance
 
@@ -267,7 +267,7 @@ role, EUI-64, firmware version (from `git describe`) and `GA_CONFIG_VERSION`.
 
 ## Roadmap
 
-Ten epics, 74 stories. Each epic delivers something that works on its own.
+Ten epics, 75 stories. Each epic delivers something that works on its own.
 
 ```mermaid
 flowchart LR
@@ -288,9 +288,9 @@ flowchart LR
 | 🟡 | 1 | Prototype confirms the hardware | 7 | S3 ↔ H2 radio link, Zigbee without a coordinator, loss under WiFi load, Zigbee OTA from a router — measured before building on them |
 | ⚪ | 2 | First alarm through the network | 7 | dry contact on a collector → mesh → logic node → FRAM → Telegram; USB provisioning, encrypted secrets, signed frames; deterministic network simulator |
 | ⚪ | 3 | No single point of failure | 11 | two logic nodes, heartbeat, leader and Telegram lease, replication, UDP second path, critical-alarm backup; bench chaos test |
-| ⚪ | 4 | Notification and acknowledgement | 7 | full Telegram UI, Pushover until acknowledged, shared ack, daily report, reboot notices |
+| ⚪ | 4 | Notification and acknowledgement | 8 | full Telegram UI, Pushover until acknowledged, shared ack, daily report, reboot notices |
 | ⚪ | 5 | Local web configuration | 7 | nodes, sensors, zones, leadership, subscribers, conflicts, export/import |
-| 🏁 | 6 | OTA, secure setup, **replacing 1.x** | 7 | OTA for all nodes, phone-based setup, secure boot for production nodes, end-of-line loops; acceptance test, then 1.x is switched off |
+| 🏁 | 6 | OTA, secure setup, **replacing 1.x** | 7 | OTA for all nodes, phone-based setup, secure boot for all production nodes, end-of-line loops; acceptance test, then 1.x is switched off |
 | ⚪ | 7 | Sensors and their health | 10 | channel model, driver gateway and starting set, 12 V and 220 V supervision |
 | ⚪ | 8 | Rules and shared logic | 9 | nine templates, `when`, modes, chains, coincidences, traces, rule editor |
 | ⚪ | 9 | MQTT mirror | 3 | events, states and health to the user's broker |
@@ -314,7 +314,7 @@ All planning was done with the BMad method and lives under `_bmad-output/` (in R
 | 🏛️ [Architecture spine](_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md) | 30 binding decisions (AD-1…AD-30) |
 | 📜 [Specification](_bmad-output/specs/spec-garage-alarms-2/SPEC.md) | 14 capabilities, constraints, non-goals, success signal + companions: [external channels](_bmad-output/specs/spec-garage-alarms-2/external-channels.md) · [sensor catalog](_bmad-output/specs/spec-garage-alarms-2/sensor-catalog.md) · [rule templates](_bmad-output/specs/spec-garage-alarms-2/rule-templates.md) · [glossary](_bmad-output/specs/spec-garage-alarms-2/glossary.md) |
 | 🎨 [UX: design](_bmad-output/planning-artifacts/ux-designs/ux-garageAlarms-2026-09-30/DESIGN.md) · [UX: experience](_bmad-output/planning-artifacts/ux-designs/ux-garageAlarms-2026-09-30/EXPERIENCE.md) | dark "Cold Steel" theme, bot menus, web sections, setup flows, mockups |
-| 🗂️ [Epics and stories](_bmad-output/planning-artifacts/epics.md) | 42 FR, 12 NFR, 69 UX requirements, 10 epics, 74 stories |
+| 🗂️ [Epics and stories](_bmad-output/planning-artifacts/epics.md) | 43 FR, 12 NFR, 69 UX requirements, 10 epics, 75 stories |
 | 🧾 [Bill of materials](_bmad-output/planning-artifacts/bill-of-materials.md) | prototype bench: 2 logic nodes + 2 collectors |
 
 ---
