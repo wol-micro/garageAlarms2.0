@@ -235,7 +235,7 @@ input queue. Two node classes run different subsets of the same stack:
 | ext | `Notify` · `Ui` | outbound queue, Telegram, Pushover, MQTT · web UI and commands | ✅ | — |
 | — | `Sensor` · `Sys` · `Storage` | drivers and channels · OTA, watchdog, time, provisioning · FRAM / NVS | ✅ | ✅ |
 
-29 binding decisions (AD-1…AD-29) are recorded in the
+30 binding decisions (AD-1…AD-30) are recorded in the
 [architecture spine](_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md).
 
 ## Build
@@ -311,7 +311,7 @@ All planning was done with the BMad method and lives under `_bmad-output/` (in R
 | --- | --- |
 | 💡 [Idea: device network](_bmad-output/forge/garage-device-network/forged-idea.md) | decentralized AP model, node classes, Telegram arbiter |
 | 💡 [Idea: rules and config](_bmad-output/forge/rules-config-model/forged-idea.md) | configuration levels, channel model, rule templates |
-| 🏛️ [Architecture spine](_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md) | 29 binding decisions (AD-1…AD-29) |
+| 🏛️ [Architecture spine](_bmad-output/planning-artifacts/architecture/architecture-garageAlarms-2026-09-29/ARCHITECTURE-SPINE.md) | 30 binding decisions (AD-1…AD-30) |
 | 📜 [Specification](_bmad-output/specs/spec-garage-alarms-2/SPEC.md) | 14 capabilities, constraints, non-goals, success signal + companions: [external channels](_bmad-output/specs/spec-garage-alarms-2/external-channels.md) · [sensor catalog](_bmad-output/specs/spec-garage-alarms-2/sensor-catalog.md) · [rule templates](_bmad-output/specs/spec-garage-alarms-2/rule-templates.md) · [glossary](_bmad-output/specs/spec-garage-alarms-2/glossary.md) |
 | 🎨 [UX: design](_bmad-output/planning-artifacts/ux-designs/ux-garageAlarms-2026-09-30/DESIGN.md) · [UX: experience](_bmad-output/planning-artifacts/ux-designs/ux-garageAlarms-2026-09-30/EXPERIENCE.md) | dark "Cold Steel" theme, bot menus, web sections, setup flows, mockups |
 | 🗂️ [Epics and stories](_bmad-output/planning-artifacts/epics.md) | 42 FR, 12 NFR, 69 UX requirements, 10 epics, 74 stories |
